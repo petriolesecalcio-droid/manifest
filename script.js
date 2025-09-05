@@ -9,7 +9,7 @@ const PUBLISHED_DOC_E_ID = '2PACX-1vSpJqXmoJaIznEo_EGHCfUxyYVWWKJCGULM9FbnI14hLh
 /* ===== Parametri geometrici =====
    ANGLE_DEG: rotazione (negativa = antioraria) per allinearsi al "VS".
    Offsets: distanza lungo la retta obliqua (in % larghezza pagina) */
-const ANGLE_DEG          = -12; // ← regola per matchare esattamente l’inclinazione del tuo VS
+const ANGLE_DEG          = -8; // ← regola per matchare esattamente l’inclinazione del tuo VS
 const VS_X_RATIO         = 0.50;
 const VS_Y_RATIO         = 0.57;
 const LEFT_OFFSET_RATIO  = 0.32;
