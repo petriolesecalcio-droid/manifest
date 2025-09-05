@@ -43,6 +43,7 @@
     overflow:hidden;
     background:#0b0c11; /* fallback */
   }
+
   /* Sfondo come <img> */
   #bg{
     position:absolute; inset:0;
@@ -63,15 +64,20 @@
     height: var(--logoHpx, 200px);
     filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
   }
+
+  /* ✅ Nomi: MAIUSCOLO, bianco pieno, Oswald forzato */
   .side .team-name{
     margin-top: var(--nameGapPx, 12px);
-    font-family: "Oswald", system-ui, Arial, sans-serif;
+    font-family: "Oswald", Arial, sans-serif !important;
     font-weight:700;
+    text-transform: uppercase;
     letter-spacing:.3px;
-    color:#d4d6db;
-    text-shadow: 0 1px 2px rgba(0,0,0,.45);
+    color:#ffffff;                 /* bianco pieno */
+    text-shadow: none;             /* niente “grigio” da shadow */
     white-space:nowrap;
     font-size: var(--nameFontPx, 40px);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   .note{ font-size:14px; opacity:.85; }
