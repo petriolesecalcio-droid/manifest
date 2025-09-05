@@ -11,94 +11,49 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&display=swap" rel="stylesheet">
 
 <style>
-  :root{
-    --out-w: 3508px;  /* A3 @300dpi */
-    --out-h: 4961px;
-  }
+  :root{ --out-w:3508px; --out-h:4961px; }
   html,body{ height:100% }
   body{
     margin:0; background:#0b0c11; color:#fff;
     font-family:system-ui, Arial, sans-serif;
     display:grid; grid-template-rows:auto 1fr auto; min-height:100dvh;
   }
-  header, footer{
-    padding:12px 16px; background:#0f1218; border-bottom:1px solid #1c2230;
-  }
+  header, footer{ padding:12px 16px; background:#0f1218; border-bottom:1px solid #1c2230; }
   footer{ border-top:1px solid #1c2230; border-bottom:none; color:#aeb7c6; }
   .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center }
-  button{
-    appearance:none; border:1px solid #2a3242; background:#151923; color:#fff; border-radius:8px;
-    padding:10px 14px; cursor:pointer;
-  }
+  button{ appearance:none; border:1px solid #2a3242; background:#151923; color:#fff; border-radius:8px; padding:10px 14px; cursor:pointer; }
   button:hover{ background:#1a2030; }
   .stage-wrap{ display:grid; place-items:center; padding:16px; }
 
-  /* Area di lavoro con aspect-ratio A3 */
   .stage{
-    position:relative;
-    width:min(96vw, 1100px);
-    aspect-ratio: 3508 / 4961;
-    box-shadow: 0 20px 60px rgba(0,0,0,.5);
-    border-radius:12px;
-    overflow:hidden;
-    background:#0b0c11; /* fallback */
+    position:relative; width:min(96vw, 1100px); aspect-ratio:3508/4961;
+    box-shadow:0 20px 60px rgba(0,0,0,.5); border-radius:12px; overflow:hidden; background:#0b0c11;
   }
-  /* Sfondo come <img> */
-  #bg{
-    position:absolute; inset:0; width:100%; height:100%;
-    object-fit:contain; display:block;
-  }
+  #bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
 
-  /* Blocchi obliqui (logo + nome) */
   .side{
-    position:absolute;
-    display:flex; flex-direction:column; align-items:center;
-    transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
-    transform-origin: center center;
+    position:absolute; display:flex; flex-direction:column; align-items:center;
+    transform: translate(-50%, -50%) rotate(var(--angle,0deg)); transform-origin:center center;
   }
-  .side .logo{
-    display:block; object-fit:contain;
-    width: var(--logoWpx, 200px);
-    height: var(--logoHpx, 200px);
-    filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
-  }
+  .side .logo{ display:block; object-fit:contain; width:var(--logoWpx,200px); height:var(--logoHpx,200px); filter:drop-shadow(0 4px 14px rgba(0,0,0,.45)); }
   .side .team-name{
-    margin-top: var(--nameGapPx, 12px);
-    font-family: "Oswald", Arial, sans-serif !important;
-    font-weight:700; text-transform:uppercase;
-    color:#ffffff; white-space:nowrap;
-    font-size: var(--nameFontPx, 40px);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    margin-top:var(--nameGapPx,12px); font-family:"Oswald", Arial, sans-serif!important; font-weight:700; text-transform:uppercase;
+    color:#fff; white-space:nowrap; font-size:var(--nameFontPx,40px); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
   }
 
-  /* RIGHE INFO INDIPENDENTI (DATA / ORA / CAMPO / PAESE) */
   .info-line{
-    position:absolute;
-    transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
-    transform-origin:center;
-    font-family:"Oswald", Arial, sans-serif !important;
-    font-weight:700; text-transform:uppercase;
-    color:#ffffff; white-space:nowrap;
-    font-size: var(--fontPx, 36px);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    position:absolute; transform: translate(-50%, -50%) rotate(var(--angle,0deg)); transform-origin:center;
+    font-family:"Oswald", Arial, sans-serif!important; font-weight:700; text-transform:uppercase;
+    color:#fff; white-space:nowrap; font-size:var(--fontPx,36px);
   }
 
   .note{ font-size:14px; opacity:.85; }
-
-  /* pannello “manopole” */
-  details.tuning { margin-left: 8px; }
+  details.tuning { margin-left:8px; }
   details.tuning summary { cursor:pointer; }
-  .grid{
-    display:grid; gap:8px;
-    grid-template-columns: max-content 220px max-content;
-    align-items:center;
-  }
+  .grid{ display:grid; gap:8px; grid-template-columns:max-content 220px max-content; align-items:center; }
   .group{ margin-top:8px; padding-top:8px; border-top:1px dashed #2a3242; grid-column:1 / -1; }
   input[type="range"]{ width:220px; }
-  .lbl{ opacity:.9; }
-  .val{ font-variant-numeric: tabular-nums; opacity:.85; min-width:56px; display:inline-block; text-align:right; }
+  .lbl{ opacity:.9; } .val{ font-variant-numeric:tabular-nums; opacity:.85; min-width:56px; display:inline-block; text-align:right; }
 </style>
 </head>
 <body>
@@ -110,64 +65,37 @@
       <details class="tuning">
         <summary>⚙️ Manopole</summary>
         <div class="grid">
-          <div class="lbl">Angolo (tutto)</div>
-          <input id="k_angle" type="range" min="-20" max="20" step="0.5"><span class="val"></span>
-
-          <div class="lbl">Rail Y (globale)</div>
-          <input id="k_rail" type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
+          <div class="lbl">Angolo (tutto)</div>          <input id="k_angle" type="range" min="-20" max="20" step="0.5"><span class="val"></span>
+          <div class="lbl">Rail Y (globale)</div>        <input id="k_rail" type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
 
           <div class="group"><strong>Blocchi squadre</strong></div>
-
-          <div class="lbl">Sinistra – distanza</div>
-          <input id="k_left" type="range" min="0.10" max="0.50" step="0.005"><span class="val"></span>
-          <div class="lbl">Sinistra – scala logo</div>
-          <input id="k_scale1" type="range" min="0.6" max="1.6" step="0.02"><span class="val"></span>
-          <div class="lbl">Sinistra – Y extra</div>
-          <input id="k_y1" type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
-
-          <div class="lbl">Destra – distanza</div>
-          <input id="k_right" type="range" min="0.10" max="0.50" step="0.005"><span class="val"></span>
-          <div class="lbl">Destra – scala logo</div>
-          <input id="k_scale2" type="range" min="0.6" max="1.6" step="0.02"><span class="val"></span>
-          <div class="lbl">Destra – Y extra</div>
-          <input id="k_y2" type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
+          <div class="lbl">Sinistra – distanza</div>     <input id="k_left" type="range" min="0.10" max="0.50" step="0.005"><span class="val"></span>
+          <div class="lbl">Sinistra – scala logo</div>   <input id="k_scale1" type="range" min="0.6" max="1.6" step="0.02"><span class="val"></span>
+          <div class="lbl">Sinistra – Y extra</div>      <input id="k_y1" type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
+          <div class="lbl">Destra – distanza</div>       <input id="k_right" type="range" min="0.10" max="0.50" step="0.005"><span class="val"></span>
+          <div class="lbl">Destra – scala logo</div>     <input id="k_scale2" type="range" min="0.6" max="1.6" step="0.02"><span class="val"></span>
+          <div class="lbl">Destra – Y extra</div>        <input id="k_y2" type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
 
           <div class="group"><strong>Info (a destra di MATCH DAY)</strong></div>
-
-          <div class="lbl">Ancora info – lungo retta</div>
-          <input id="k_info_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">Ancora info – Y extra</div>
-          <input id="k_info_y" type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
+          <div class="lbl">Ancora info – lungo retta</div><input id="k_info_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
+          <div class="lbl">Ancora info – Y extra</div>   <input id="k_info_y" type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
 
           <div class="group"><em>Per-riga</em></div>
+          <div class="lbl">DATA – scala</div>            <input id="k_date_scale"  type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
+          <div class="lbl">DATA – lungo retta</div>      <input id="k_date_along"  type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
+          <div class="lbl">DATA – Y extra</div>          <input id="k_date_y"      type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
 
-          <div class="lbl">DATA – scala</div>
-          <input id="k_date_scale"  type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
-          <div class="lbl">DATA – lungo retta</div>
-          <input id="k_date_along"  type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">DATA – Y extra</div>
-          <input id="k_date_y"      type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
+          <div class="lbl">ORA – scala</div>             <input id="k_time_scale"  type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
+          <div class="lbl">ORA – lungo retta</div>       <input id="k_time_along"  type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
+          <div class="lbl">ORA – Y extra</div>           <input id="k_time_y"      type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
 
-          <div class="lbl">ORA – scala</div>
-          <input id="k_time_scale"  type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
-          <div class="lbl">ORA – lungo retta</div>
-          <input id="k_time_along"  type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">ORA – Y extra</div>
-          <input id="k_time_y"      type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
+          <div class="lbl">CAMPO – scala</div>           <input id="k_field_scale" type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
+          <div class="lbl">CAMPO – lungo retta</div>     <input id="k_field_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
+          <div class="lbl">CAMPO – Y extra</div>         <input id="k_field_y"     type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
 
-          <div class="lbl">CAMPO – scala</div>
-          <input id="k_field_scale" type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
-          <div class="lbl">CAMPO – lungo retta</div>
-          <input id="k_field_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">CAMPO – Y extra</div>
-          <input id="k_field_y"     type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
-
-          <div class="lbl">PAESE – scala</div>
-          <input id="k_paese_scale" type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
-          <div class="lbl">PAESE – lungo retta</div>
-          <input id="k_paese_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">PAESE – Y extra</div>
-          <input id="k_paese_y"     type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
+          <div class="lbl">PAESE – scala</div>           <input id="k_paese_scale" type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
+          <div class="lbl">PAESE – lungo retta</div>     <input id="k_paese_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
+          <div class="lbl">PAESE – Y extra</div>         <input id="k_paese_y"     type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
         </div>
       </details>
 
@@ -180,10 +108,7 @@
 
   <main class="stage-wrap">
     <div id="stage" class="stage" aria-label="Copertina Matchday">
-      <!-- Sfondo -->
       <img id="bg" src="fixed.svg" alt="Sfondo" />
-
-      <!-- Blocchi obliqui con loghi -->
       <div id="side1" class="side">
         <img id="logo1" class="logo" alt="Logo squadra 1" crossorigin="anonymous" />
         <div id="name1" class="team-name"></div>
@@ -193,7 +118,7 @@
         <div id="name2" class="team-name"></div>
       </div>
 
-      <!-- RIGHE INFO INDIPENDENTI -->
+      <!-- 4 righe info indipendenti -->
       <div id="infoDate"  class="info-line"></div>
       <div id="infoTime"  class="info-line"></div>
       <div id="infoField" class="info-line"></div>
@@ -201,11 +126,7 @@
     </div>
   </main>
 
-  <footer>
-    <div class="note">
-      Dati da Google Sheet (Meta + Avversari). “Paese” letto da Avversari. L’angolo è unico per tutte le righe.
-    </div>
-  </footer>
+  <footer><div class="note">Dati da Google Sheet (Meta + Avversari). “Campo” e “Paese” letti da Avversari per la squadra1.</div></footer>
 
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
   <script src="script.js" defer></script>
