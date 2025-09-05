@@ -15,7 +15,7 @@ const RIGHT_OFFSET_RATIO = 0.25; // tua impostazione
 
 /* >>> NUOVO: spostamento verticale globale della “rete” obliqua (in % altezza) <<<
    negativo = su, positivo = giù. Es: -0.02 sposta su di ~2% dell’altezza pagina */
-const RAIL_Y_SHIFT_RATIO = 0.10;
+const RAIL_Y_SHIFT_RATIO = 0.02;
 
 /* >>> Opzionale: micro-offset verticale extra per un solo lato (in % altezza) <<< */
 const SIDE1_Y_EXTRA_RATIO = 0.00;  // sinistra
