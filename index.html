@@ -6,8 +6,7 @@
 <title>Petriolese – Cover Generator</title>
 <style>
   :root{
-    /* A3 @300dpi */
-    --out-w: 3508px;
+    --out-w: 3508px;  /* A3 @300dpi */
     --out-h: 4961px;
   }
   html,body{ height:100% }
@@ -38,16 +37,27 @@
     overflow:hidden;
     background:#0b0c11; /* fallback */
   }
-  /* Sfondo come <img> (non CSS background!) */
+  /* Sfondo come <img> */
   #bg{
     position:absolute; inset:0;
     width:100%; height:100%;
     object-fit:contain; display:block;
   }
-  /* Logo squadra1 */
-  #logo1{
+  /* Loghi */
+  #logo1, #logo2{
     position:absolute; display:block; object-fit:contain;
     filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
+  }
+  /* Nomi squadre */
+  .team-name{
+    position:absolute;
+    transform: translateX(-50%);
+    text-align:center;
+    font-weight:800;
+    letter-spacing:.3px;
+    color:#d4d6db;            /* grigio chiaro leggibile */
+    text-shadow: 0 1px 2px rgba(0,0,0,.45);
+    white-space:nowrap;       /* niente a capo sotto il logo */
   }
 
   .note{ font-size:14px; opacity:.85; }
@@ -67,17 +77,20 @@
 
   <main class="stage-wrap">
     <div id="stage" class="stage" aria-label="Copertina Matchday">
-      <!-- IMPORTANTE: lo sfondo SVG -->
+      <!-- Sfondo -->
       <img id="bg" src="fixed.svg" alt="Sfondo" />
-      <!-- Logo squadra1 -->
+      <!-- Logos -->
       <img id="logo1" alt="Logo squadra 1" crossorigin="anonymous" />
+      <img id="logo2" alt="Logo squadra 2" crossorigin="anonymous" />
+      <!-- Nomi -->
+      <div id="name1" class="team-name"></div>
+      <div id="name2" class="team-name"></div>
     </div>
   </main>
 
   <footer>
     <div class="note">
-      Fonte dati: lo stesso Google Sheet (Meta + Avversari).<br/>
-      Logica loghi: prima URL da “Avversari”, altrimenti fallback <code>logos/&lt;slug&gt;.webp</code>.
+      Fonte dati: Google Sheet (Meta + Avversari). Logica loghi: prima URL da “Avversari”, poi fallback <code>logos/&lt;slug&gt;.webp</code>.
     </div>
   </footer>
 
