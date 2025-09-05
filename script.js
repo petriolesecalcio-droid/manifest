@@ -4,40 +4,39 @@ const META_GID      = '254048258';   // Meta
 const OPP_GID       = '1284472120';  // Avversari
 const PUBLISHED_DOC_E_ID = '2PACX-1vSpJqXmoJaIznEo_EGHCfUxyYVWWKJCGULM9FbnI14hLhGpsjt3oMHT5ahJwEmJ4w';
 
-/* ===== Parametri (+ localStorage) =====
-   Default presi dallo screenshot che mi hai mandato */
+/* ===== Parametri (default = tuoi slider) ===== */
 const K = {
-  // Geometria globale
-  ANGLE_DEG: -9.5,
-  VS_X_RATIO: 0.50,
-  VS_Y_RATIO: 0.57,
-  LEFT_OFFSET_RATIO: 0.25,
-  RIGHT_OFFSET_RATIO: 0.25,
-  RAIL_Y_SHIFT_RATIO: 0.00,
-  SIDE1_Y_EXTRA_RATIO: 0.00,
-  SIDE2_Y_EXTRA_RATIO: 0.00,
-  LOGO_H_RATIO: 0.12,
-  NAME_GAP_RATIO: 0.018,
-  NAME_FONT_RATIO: 0.038,
-  SCALE1: 1.00,
-  SCALE2: 1.00,
+  /* Squadre (controllo unificato) */
+  TEAM_ANGLE_DEG:     -9.5,
+  VS_X_RATIO:          0.50,
+  VS_Y_RATIO:          0.57,
+  TEAM_OFFSET_RATIO:   0.25,  // distanza VS, per entrambi
+  TEAM_RAIL_Y_RATIO:   0.00,  // shift verticale del binario
+  TEAM_SCALE:          1.00,  // scala loghi (entrambi)
+  TEAM_Y_EXTRA_RATIO:  0.00,  // offset Y extra (entrambi)
 
-  // Info – ancora (vicino “MATCH DAY”)
-  INFO_BASE_X_RATIO: 0.78,
-  INFO_BASE_Y_RATIO: 0.24,
-  INFO_ALONG_RATIO:  0.00,   // offset comune lungo retta
-  INFO_Y_EXTRA_RATIO: 0.00,  // offset comune verticale (perpendicolare)
+  /* Dimensioni nomi/logo */
+  LOGO_H_RATIO:        0.12,
+  NAME_GAP_RATIO:      0.018,
+  NAME_FONT_RATIO:     0.038,
 
-  // Per-riga (DATA / ORA / CAMPO / PAESE)
-  INFO_FONT_RATIO: 0.032,     // base font
-  INFO_DATE_SCALE: 0.78,  INFO_DATE_ALONG: -0.025,  INFO_DATE_Y: -0.048,
-  INFO_TIME_SCALE: 1.00,  INFO_TIME_ALONG:  0.075,  INFO_TIME_Y: -0.012,
-  INFO_FIELD_SCALE:1.00,  INFO_FIELD_ALONG: 0.000,  INFO_FIELD_Y:  0.090,
-  INFO_PAESE_SCALE:1.00,  INFO_PAESE_ALONG:-0.250,  INFO_PAESE_Y:  0.078,
+  /* Info (ancora + angolo unico per le 4 righe) */
+  INFO_ANGLE_DEG:     -9.5,
+  INFO_BASE_X_RATIO:   0.78,
+  INFO_BASE_Y_RATIO:   0.24,
+  INFO_ALONG_RATIO:    0.00,  // offset comune lungo retta
+  INFO_Y_EXTRA_RATIO:  0.00,  // offset comune perpendicolare
+  INFO_FONT_RATIO:     0.032,
+
+  /* Per-riga (DATA/ORA/CAMPO/PAESE) — tuoi valori */
+  INFO_DATE_SCALE:  0.78,  INFO_DATE_ALONG:  -0.025, INFO_DATE_Y:  -0.048,
+  INFO_TIME_SCALE:  1.00,  INFO_TIME_ALONG:   0.075, INFO_TIME_Y:  -0.012,
+  INFO_FIELD_SCALE: 0.60,  INFO_FIELD_ALONG: -0.100, INFO_FIELD_Y:  0.050,
+  INFO_PAESE_SCALE: 1.02,  INFO_PAESE_ALONG:  0.075, INFO_PAESE_Y:  0.078,
 };
 
-/* resetto la chiave LS per applicare i nuovi default */
-const LS_KEY = 'manifest_tuning_v3';
+/* nuova chiave per applicare i default aggiornati */
+const LS_KEY = 'manifest_tuning_v4';
 try { Object.assign(K, JSON.parse(localStorage.getItem(LS_KEY)||'{}')||{}); } catch {}
 
 /* ===== Helpers sheet ===== */
@@ -76,7 +75,7 @@ function normalizeMeta(rows){
   });
   return out;
 }
-/* Avversari: accetto colonne Logo, Paese, Campo */
+/* Avversari: accetta Logo, Paese, Campo */
 function normalizeOpp(rows){
   const out=new Map();
   rows.forEach(r=>{
@@ -122,14 +121,14 @@ function normalizeTime(s){
 /* Font readiness (Oswald) */
 async function waitFonts(){ if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch{} } }
 
-/* ===== Layout squadre ===== */
+/* ===== Layout squadre (angolo/parametri unificati) ===== */
 function layoutSide(stageEl, sideEl, cx, cy, scale=1){
   const H = stageEl.clientHeight;
   const logoH   = H * K.LOGO_H_RATIO * scale;
   const nameGap = H * K.NAME_GAP_RATIO;
   const nameFont= H * K.NAME_FONT_RATIO;
   sideEl.style.left = `${cx}px`; sideEl.style.top  = `${cy}px`;
-  sideEl.style.setProperty('--angle', `${K.ANGLE_DEG}deg`);
+  sideEl.style.setProperty('--angle', `${K.TEAM_ANGLE_DEG}deg`);
   sideEl.style.setProperty('--logoHpx', `${logoH}px`);
   sideEl.style.setProperty('--logoWpx', `${logoH}px`);
   sideEl.style.setProperty('--nameGapPx', `${nameGap}px`);
@@ -137,27 +136,35 @@ function layoutSide(stageEl, sideEl, cx, cy, scale=1){
 }
 function layoutTeams(stageEl){
   const W = stageEl.clientWidth, H = stageEl.clientHeight;
-  const vsX = W * K.VS_X_RATIO, vsY = H * (K.VS_Y_RATIO + K.RAIL_Y_SHIFT_RATIO);
-  const th = K.ANGLE_DEG * Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
-  const L = W*K.LEFT_OFFSET_RATIO, R = W*K.RIGHT_OFFSET_RATIO;
-  let lX=vsX-dx*L, lY=vsY-dy*L, rX=vsX+dx*R, rY=vsY+dy*R;
-  lY += H*K.SIDE1_Y_EXTRA_RATIO; rY += H*K.SIDE2_Y_EXTRA_RATIO;
-  layoutSide(stageEl, document.getElementById('side1'), lX, lY, K.SCALE1);
-  layoutSide(stageEl, document.getElementById('side2'), rX, rY, K.SCALE2);
+  const vsX = W * K.VS_X_RATIO;
+  const vsY = H * (K.VS_Y_RATIO + K.TEAM_RAIL_Y_RATIO);
+  const th = K.TEAM_ANGLE_DEG * Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
+  const D = W * K.TEAM_OFFSET_RATIO;
+
+  // punti simmetrici rispetto al VS
+  let lX=vsX-dx*D, lY=vsY-dy*D;
+  let rX=vsX+dx*D, rY=vsY+dy*D;
+
+  // extra verticale identico per entrambi
+  lY += H*K.TEAM_Y_EXTRA_RATIO;
+  rY += H*K.TEAM_Y_EXTRA_RATIO;
+
+  layoutSide(stageEl, document.getElementById('side1'), lX, lY, K.TEAM_SCALE);
+  layoutSide(stageEl, document.getElementById('side2'), rX, rY, K.TEAM_SCALE);
 }
 
 /* ===== Layout righe INFO ===== */
 function placeInfoLine(stageEl, el, alongRatio, yRatio, scale){
   const W = stageEl.clientWidth, H = stageEl.clientHeight;
   const baseX=W*K.INFO_BASE_X_RATIO, baseY=H*K.INFO_BASE_Y_RATIO;
-  const th=K.ANGLE_DEG*Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
+  const th=K.INFO_ANGLE_DEG*Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
   const nx=-Math.sin(th), ny=Math.cos(th);
   const alongG=W*K.INFO_ALONG_RATIO, yG=H*K.INFO_Y_EXTRA_RATIO;
   const cx = baseX + dx*(alongG + W*alongRatio) + nx*(yG + H*yRatio);
   const cy = baseY + dy*(alongG + W*alongRatio) + ny*(yG + H*yRatio);
   const fontPx = H * K.INFO_FONT_RATIO * scale;
   el.style.left = `${cx}px`; el.style.top = `${cy}px`;
-  el.style.setProperty('--angle', `${K.ANGLE_DEG}deg`);
+  el.style.setProperty('--angle', `${K.INFO_ANGLE_DEG}deg`);
   el.style.setProperty('--fontPx', `${fontPx}px`);
 }
 function layoutInfo(stageEl){
@@ -190,19 +197,19 @@ function initKnobs(){
   const fmtPctW=v=>(v>0?'+':'')+(v*100).toFixed(1)+'% W';
   const fmtPctH=v=>(v>0?'+':'')+(v*100).toFixed(1)+'% H';
 
-  bindKnob('k_angle','ANGLE_DEG', v=>`${v}°`);
-  bindKnob('k_rail','RAIL_Y_SHIFT_RATIO', v=>(v>0?'+':'')+(v*100).toFixed(1)+'%');
+  // squadre (unificato)
+  bindKnob('k_team_angle','TEAM_ANGLE_DEG', v=>`${v}°`);
+  bindKnob('k_team_rail','TEAM_RAIL_Y_RATIO', v=>(v>0?'+':'')+(v*100).toFixed(1)+'%');
+  bindKnob('k_team_dist','TEAM_OFFSET_RATIO', v=>(v*100).toFixed(1)+'%');
+  bindKnob('k_team_scale','TEAM_SCALE', v=>`${v.toFixed(2)}×`);
+  bindKnob('k_team_y','TEAM_Y_EXTRA_RATIO', fmtPctH);
 
-  bindKnob('k_left','LEFT_OFFSET_RATIO', v=>(v*100).toFixed(1)+'%');
-  bindKnob('k_scale1','SCALE1', v=>`${v.toFixed(2)}×`);
-  bindKnob('k_y1','SIDE1_Y_EXTRA_RATIO', fmtPctH);
-  bindKnob('k_right','RIGHT_OFFSET_RATIO', v=>(v*100).toFixed(1)+'%');
-  bindKnob('k_scale2','SCALE2', v=>`${v.toFixed(2)}×`);
-  bindKnob('k_y2','SIDE2_Y_EXTRA_RATIO', fmtPctH);
-
+  // info (ancora + angolo unico)
+  bindKnob('k_info_angle','INFO_ANGLE_DEG', v=>`${v}°`);
   bindKnob('k_info_along','INFO_ALONG_RATIO', fmtPctW);
   bindKnob('k_info_y','INFO_Y_EXTRA_RATIO', fmtPctH);
 
+  // per-riga
   bindKnob('k_date_scale','INFO_DATE_SCALE', v=>`${v.toFixed(2)}×`);
   bindKnob('k_date_along','INFO_DATE_ALONG', fmtPctW);
   bindKnob('k_date_y','INFO_DATE_Y', fmtPctH);
@@ -250,16 +257,16 @@ async function loadAndRender(){
     ]);
 
     /* ===== INFO TEXT ===== */
-    // DATA
+    // DATA → “sabato 6 settembre 2025”
     const d = parseDateSmart(meta.get('data') || meta.get('giorno') || meta.get('date') || '');
     infoDate.textContent = d ? formatDateIT(d) : '';
 
-    // ORA (“ORE”)
+    // ORA → “ORE 16:30”
     const oraRaw = meta.get('ora') || meta.get('orario') || meta.get('time') || '';
     const oraNorm = normalizeTime(oraRaw);
     infoTime.textContent = oraNorm ? `ORE ${oraNorm}` : '';
 
-    // CAMPO e PAESE da Avversari per squadra1
+    // CAMPO / PAESE da Avversari per squadra1 (grezzi)
     infoField.textContent = resolveCampo(squadra1, opp, '');
     infoPaese.textContent = resolvePaese(squadra1, opp, '');
 
@@ -288,35 +295,40 @@ async function downloadPNG(){
 
   (function applyClone(){
     const W=clone.clientWidth, H=clone.clientHeight;
-    // squadre
-    const vsX=W*K.VS_X_RATIO, vsY=H*(K.VS_Y_RATIO+K.RAIL_Y_SHIFT_RATIO);
-    const th=K.ANGLE_DEG*Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
-    const L=W*K.LEFT_OFFSET_RATIO, R=W*K.RIGHT_OFFSET_RATIO;
-    let lX=vsX-dx*L, lY=vsY-dy*L, rX=vsX+dx*R, rY=vsY+dy*R;
-    lY+=H*K.SIDE1_Y_EXTRA_RATIO; rY+=H*K.SIDE2_Y_EXTRA_RATIO;
-    const placeSide=(sel,cx,cy,scale)=>{
+
+    // --- squadre ---
+    const vsX=W*K.VS_X_RATIO, vsY=H*(K.VS_Y_RATIO+K.TEAM_RAIL_Y_RATIO);
+    const th=K.TEAM_ANGLE_DEG*Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
+    const D=W*K.TEAM_OFFSET_RATIO;
+    let lX=vsX-dx*D, lY=vsY-dy*D, rX=vsX+dx*D, rY=vsY+dy*D;
+    lY+=H*K.TEAM_Y_EXTRA_RATIO; rY+=H*K.TEAM_Y_EXTRA_RATIO;
+
+    const placeSide=(sel,cx,cy)=>{
       const el=clone.querySelector(sel);
-      const logoH=H*K.LOGO_H_RATIO*scale, nameGap=H*K.NAME_GAP_RATIO, nameFont=H*K.NAME_FONT_RATIO;
+      const logoH=H*K.LOGO_H_RATIO*K.TEAM_SCALE, nameGap=H*K.NAME_GAP_RATIO, nameFont=H*K.NAME_FONT_RATIO;
       el.style.left=`${cx}px`; el.style.top=`${cy}px`;
-      el.style.setProperty('--angle', `${K.ANGLE_DEG}deg`);
+      el.style.setProperty('--angle', `${K.TEAM_ANGLE_DEG}deg`);
       el.style.setProperty('--logoHpx', `${logoH}px`);
       el.style.setProperty('--logoWpx', `${logoH}px`);
       el.style.setProperty('--nameGapPx', `${nameGap}px`);
       el.style.setProperty('--nameFontPx', `${nameFont}px`);
     };
-    placeSide('#side1', lX, lY, K.SCALE1); placeSide('#side2', rX, rY, K.SCALE2);
+    placeSide('#side1', lX, lY);
+    placeSide('#side2', rX, rY);
 
-    // info (4 righe)
+    // --- info (4 righe) ---
     const baseX=W*K.INFO_BASE_X_RATIO, baseY=H*K.INFO_BASE_Y_RATIO;
-    const nx=-Math.sin(th), ny=Math.cos(th);
+    const thI=K.INFO_ANGLE_DEG*Math.PI/180, dxI=Math.cos(thI), dyI=Math.sin(thI);
+    const nx=-Math.sin(thI), ny=Math.cos(thI);
     const alongG=W*K.INFO_ALONG_RATIO, yG=H*K.INFO_Y_EXTRA_RATIO;
+
     const placeLine=(sel,along,y,scale)=>{
       const el=clone.querySelector(sel);
-      const cx = baseX + dx*(alongG + W*along) + nx*(yG + H*y);
-      const cy = baseY + dy*(alongG + W*along) + ny*(yG + H*y);
+      const cx = baseX + dxI*(alongG + W*along) + nx*(yG + H*y);
+      const cy = baseY + dyI*(alongG + W*along) + ny*(yG + H*y);
       const fontPx = H*K.INFO_FONT_RATIO*scale;
       el.style.left=`${cx}px`; el.style.top=`${cy}px`;
-      el.style.setProperty('--angle', `${K.ANGLE_DEG}deg`);
+      el.style.setProperty('--angle', `${K.INFO_ANGLE_DEG}deg`);
       el.style.setProperty('--fontPx', `${fontPx}px`);
     };
     placeLine('#infoDate',  K.INFO_DATE_ALONG,  K.INFO_DATE_Y,  K.INFO_DATE_SCALE);
