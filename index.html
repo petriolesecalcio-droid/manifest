@@ -43,7 +43,6 @@
     overflow:hidden;
     background:#0b0c11; /* fallback */
   }
-
   /* Sfondo come <img> */
   #bg{
     position:absolute; inset:0;
@@ -51,7 +50,7 @@
     object-fit:contain; display:block;
   }
 
-  /* Contenitori obliqui (logo + nome) */
+  /* Blocchi obliqui (logo + nome) */
   .side{
     position:absolute;
     display:flex; flex-direction:column; align-items:center;
@@ -64,23 +63,43 @@
     height: var(--logoHpx, 200px);
     filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
   }
-
-  /* ✅ Nomi: MAIUSCOLO, bianco pieno, Oswald forzato */
   .side .team-name{
     margin-top: var(--nameGapPx, 12px);
     font-family: "Oswald", Arial, sans-serif !important;
-    font-weight:700;
-    text-transform: uppercase;
-    letter-spacing:.3px;
-    color:#ffffff;                 /* bianco pieno */
-    text-shadow: none;             /* niente “grigio” da shadow */
-    white-space:nowrap;
+    font-weight:700; text-transform:uppercase;
+    color:#ffffff; white-space:nowrap;
     font-size: var(--nameFontPx, 40px);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Blocco info (a destra di MATCH DAY) */
+  .info-block{
+    position:absolute;
+    transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
+    transform-origin:center;
+    display:flex; align-items:flex-start;
+  }
+  .info-text{
+    font-family:"Oswald", Arial, sans-serif !important;
+    font-weight:700; text-transform:uppercase;
+    color:#ffffff; line-height:1.12; white-space:pre;
+    font-size: var(--infoFontPx, 40px);
+  }
+
   .note{ font-size:14px; opacity:.85; }
+
+  /* pannello “manopole” */
+  details.tuning { margin-left: 8px; }
+  details.tuning summary { cursor:pointer; }
+  .grid{
+    display:grid; gap:8px;
+    grid-template-columns: max-content 200px max-content;
+    align-items:center;
+  }
+  .group{ margin-top:8px; padding-top:8px; border-top:1px dashed #2a3242; }
+  input[type="range"]{ width:200px; }
+  .lbl{ opacity:.9; }
 </style>
 </head>
 <body>
@@ -88,6 +107,62 @@
     <div class="controls">
       <strong>Petriolese – Cover Generator</strong>
       <span id="status" class="note"></span>
+
+      <details class="tuning">
+        <summary>⚙️ Manopole</summary>
+        <div class="grid">
+          <div class="lbl">Angolo</div>
+          <input id="k_angle" type="range" min="-20" max="20" step="0.5">
+          <span id="val_angle"></span>
+
+          <div class="lbl">Rail Y (globale)</div>
+          <input id="k_rail" type="range" min="-0.10" max="0.10" step="0.002">
+          <span id="val_rail"></span>
+
+          <div class="group"></div><div class="group"></div><div class="group"></div>
+
+          <div class="lbl">Sinistra – distanza</div>
+          <input id="k_left" type="range" min="0.10" max="0.50" step="0.005">
+          <span id="val_left"></span>
+
+          <div class="lbl">Sinistra – scala logo</div>
+          <input id="k_scale1" type="range" min="0.6" max="1.6" step="0.02">
+          <span id="val_scale1"></span>
+
+          <div class="lbl">Sinistra – Y extra</div>
+          <input id="k_y1" type="range" min="-0.10" max="0.10" step="0.002">
+          <span id="val_y1"></span>
+
+          <div class="group"></div><div class="group"></div><div class="group"></div>
+
+          <div class="lbl">Destra – distanza</div>
+          <input id="k_right" type="range" min="0.10" max="0.50" step="0.005">
+          <span id="val_right"></span>
+
+          <div class="lbl">Destra – scala logo</div>
+          <input id="k_scale2" type="range" min="0.6" max="1.6" step="0.02">
+          <span id="val_scale2"></span>
+
+          <div class="lbl">Destra – Y extra</div>
+          <input id="k_y2" type="range" min="-0.10" max="0.10" step="0.002">
+          <span id="val_y2"></span>
+
+          <div class="group"></div><div class="group"></div><div class="group"></div>
+
+          <div class="lbl">Info – font scale</div>
+          <input id="k_info_scale" type="range" min="0.6" max="2.0" step="0.02">
+          <span id="val_info_scale"></span>
+
+          <div class="lbl">Info – lungo retta</div>
+          <input id="k_info_along" type="range" min="-0.40" max="0.60" step="0.005">
+          <span id="val_info_along"></span>
+
+          <div class="lbl">Info – Y extra</div>
+          <input id="k_info_y" type="range" min="-0.20" max="0.20" step="0.002">
+          <span id="val_info_y"></span>
+        </div>
+      </details>
+
       <div style="margin-left:auto; display:flex; gap:8px">
         <button id="btnRefresh">Rileggi dallo Sheet</button>
         <button id="btnDownload">Scarica PNG (A3, 300dpi)</button>
@@ -99,7 +174,7 @@
     <div id="stage" class="stage" aria-label="Copertina Matchday">
       <!-- Sfondo -->
       <img id="bg" src="fixed.svg" alt="Sfondo" />
-      <!-- Blocchi obliqui -->
+      <!-- Blocchi obliqui col logo -->
       <div id="side1" class="side">
         <img id="logo1" class="logo" alt="Logo squadra 1" crossorigin="anonymous" />
         <div id="name1" class="team-name"></div>
@@ -108,12 +183,16 @@
         <img id="logo2" class="logo" alt="Logo squadra 2" crossorigin="anonymous" />
         <div id="name2" class="team-name"></div>
       </div>
+      <!-- Blocco INFO (data / ora / campo / paese) -->
+      <div id="info" class="info-block">
+        <div id="infoText" class="info-text"></div>
+      </div>
     </div>
   </main>
 
   <footer>
     <div class="note">
-      Fonte dati: Google Sheet (Meta + Avversari). Logica loghi: prima URL da “Avversari”, poi fallback <code>logos/&lt;slug&gt;.webp</code>.
+      Fonte dati: Google Sheet (Meta + Avversari). Logica loghi: prima URL da “Avversari”, poi fallback <code>logos/&lt;slug&gt;.webp</code>. “Paese” letto da Avversari.
     </div>
   </footer>
 
