@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Petriolese – Cover Generator</title>
+<style>
+  :root{
+    /* A3 @300dpi */
+    --out-w: 3508px;
+    --out-h: 4961px;
+
+    /* posizionamento logo rispetto al centro */
+    --logo-h-ratio: 0.12; /* 12% dell'altezza pagina */
+    --gap-ratio:    0.02; /* 2% della larghezza pagina */
+  }
+
+  body{
+    margin:0; background:#0b0c11; color:#fff;
+    font-family:system-ui, Arial, sans-serif;
+    display:grid; grid-template-rows:auto 1fr auto; min-height:100dvh;
+  }
+
+  header, footer{
+    padding:12px 16px; background:#0f1218; border-bottom:1px solid #1c2230;
+  }
+  footer{ border-top:1px solid #1c2230; border-bottom:none; color:#aeb7c6; }
+
+  .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center }
+  button{
+    appearance:none; border:1px solid #2a3242; background:#151923; color:#fff; border-radius:8px;
+    padding:10px 14px; cursor:pointer;
+  }
+  button:hover{ background:#1a2030; }
+
+  .stage-wrap{
+    display:grid; place-items:center; padding:16px;
+  }
+  /* preview responsiva ma con aspect ratio A3 */
+  .stage{
+    position:relative;
+    width:min(96vw, 1100px);
+    aspect-ratio: 3508 / 4961;
+    background: #0b0c11 url('fixed.svg') center / contain no-repeat;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    border-radius:12px;
+    overflow:hidden;
+  }
+
+  /* logo sovrapposto */
+  #logo1{
+    position:absolute; display:block; object-fit:contain;
+    /* sarà dimensionato/posizionato via JS in base a out-w/out-h */
+    filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
+  }
+
+  .note{ font-size:14px; opacity:.85; }
+  .ok{ color:#8ff59a } .warn{ color:#ffd36d } .err{ color:#ff8f8f }
+</style>
+</head>
+<body>
+  <header>
+    <div class="controls">
+      <strong>Petriolese – Cover Generator</strong>
+      <span id="status" class="note"></span>
+      <div style="margin-left:auto; display:flex; gap:8px">
+        <button id="btnRefresh">Rileggi dallo Sheet</button>
+        <button id="btnDownload">Scarica PNG (A3, 300dpi)</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="stage-wrap">
+    <div id="stage" class="stage" aria-label="Copertina Matchday">
+      <img id="logo1" alt="Logo squadra 1" crossorigin="anonymous" />
+    </div>
+  </main>
+
+  <footer>
+    <div class="note">
+      Fonte dati: lo stesso Google Sheet del progetto lineup (Meta + Avversari).<br/>
+      Logica loghi: prima URL da “Avversari”, poi fallback <code>logos/&lt;slug&gt;.webp</code>.
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>
