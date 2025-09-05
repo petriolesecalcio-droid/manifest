@@ -17,29 +17,23 @@ const K = {
   LOGO_H_RATIO: 0.12,
   NAME_GAP_RATIO: 0.018,
   NAME_FONT_RATIO: 0.038,
-  SCALE1: 1.00,           // scala logo sinistra
-  SCALE2: 1.00,           // scala logo destra
+  SCALE1: 1.00,
+  SCALE2: 1.00,
 
   /* ---- Info block (ancorato area "MATCH DAY") ---- */
-  INFO_BASE_X_RATIO: 0.78,   // posizione base (x%) – da rifinire via slider
-  INFO_BASE_Y_RATIO: 0.24,   // posizione base (y%)
-  INFO_ALONG_RATIO:  0.00,   // spostamento lungo la retta (in larghezze pagina, + a destra)
-  INFO_Y_EXTRA_RATIO: 0.00,  // spostamento perpendicolare (in altezze pagina, + in giù)
-  INFO_FONT_RATIO:   0.032,  // dimensione base font
-  INFO_FONT_SCALE:   1.00,   // scala via slider
+  INFO_BASE_X_RATIO: 0.78,
+  INFO_BASE_Y_RATIO: 0.24,
+  INFO_ALONG_RATIO:  0.00,
+  INFO_Y_EXTRA_RATIO: 0.00,
+  INFO_FONT_RATIO:   0.032,
+  INFO_FONT_SCALE:   1.00,
 };
-
 const LS_KEY = 'manifest_tuning_v1';
-try {
-  const saved = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
-  Object.assign(K, saved||{});
-} catch {}
+try { Object.assign(K, JSON.parse(localStorage.getItem(LS_KEY)||'{}')||{}); } catch{}
 
 /* ===== Helpers sheet ===== */
-const gvizCsvURL=(fileId,gid)=>
-  `https://docs.google.com/spreadsheets/d/${fileId}/gviz/tq?gid=${encodeURIComponent(gid)}&headers=1&tqx=out:csv`;
-const pubCsvFromDocEId=(eId,gid)=>
-  `https://docs.google.com/spreadsheets/d/e/${eId}/pub?gid=${encodeURIComponent(gid)}&single=true&output=csv`;
+const gvizCsvURL=(fileId,gid)=>`https://docs.google.com/spreadsheets/d/${fileId}/gviz/tq?gid=${encodeURIComponent(gid)}&headers=1&tqx=out:csv`;
+const pubCsvFromDocEId=(eId,gid)=>`https://docs.google.com/spreadsheets/d/e/${eId}/pub?gid=${encodeURIComponent(gid)}&single=true&output=csv`;
 function parseCSV(text){
   let t=String(text||'').replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
   const rows=[]; let row=[],cur='',inQ=false;
@@ -54,19 +48,15 @@ function parseCSV(text){
   return rows.map(r=>Object.fromEntries(header.map((h,i)=>[h, r[i]!==undefined?r[i]:'' ])));
 }
 async function fetchCsvPrefer(fileId,gid,eid){
-  try{
-    const r = await fetch(gvizCsvURL(fileId,gid), {cache:'no-store'});
-    if(r.ok) return parseCSV(await r.text());
-  }catch(_){}
-  const r2 = await fetch(pubCsvFromDocEId(eid,gid), {cache:'no-store'});
-  if(!r2.ok) throw new Error('CSV published fetch failed');
+  try{ const r=await fetch(gvizCsvURL(fileId,gid),{cache:'no-store'}); if(r.ok) return parseCSV(await r.text()); }catch{}
+  const r2=await fetch(pubCsvFromDocEId(eid,gid),{cache:'no-store'}); if(!r2.ok) throw new Error('CSV published fetch failed');
   return parseCSV(await r2.text());
 }
 
 /* ===== Normalizzazioni ===== */
-const slugify = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-  .toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+const slugify = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 const normKey = k => String(k||'').trim().toLowerCase().replace(/\s+/g,'');
+
 function normalizeMeta(rows){
   const out=new Map();
   rows.forEach(r=>{
@@ -76,15 +66,14 @@ function normalizeMeta(rows){
   });
   return out;
 }
-/* Avversari: accetta colonne Logo e Paese */
+/* Avversari: Logo + Paese */
 function normalizeOpp(rows){
   const out=new Map();
   rows.forEach(r=>{
     const name=(''+(r.Squadra||r.squadra||'')).trim();
     const logo=(''+(r.Logo||r.logo||'')).trim();
     const paese=(''+(r.Paese||r.paese||'')).trim();
-    if(!name) return;
-    out.set(name.toLowerCase(), { logo, paese });
+    if(name) out.set(name.toLowerCase(), { logo, paese });
   });
   return out;
 }
@@ -107,7 +96,53 @@ function resolvePaese(teamName, oppMap, fallback=''){
   return (rec && rec.paese) ? rec.paese : fallback;
 }
 
-/* Campo: ripulisci parole "campo","stadio","comunale" */
+/* ===== Parsing/formatting DATA/ORA/CAMPO ===== */
+// prova più formati comuni (dd/mm/yyyy, dd-mm-yyyy, yyyy-mm-dd)
+function parseDateSmart(s){
+  const v=String(s||'').trim();
+  if(!v) return null;
+  let m;
+  if((m=v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/))) {
+    const d=+m[1], mo=+m[2]-1, y=+m[3]; return new Date(y, mo, d);
+  }
+  if((m=v.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/))) {
+    const y=+m[1], mo=+m[2]-1, d=+m[3]; return new Date(y, mo, d);
+  }
+  const t=Date.parse(v); if(!Number.isNaN(t)) return new Date(t);
+  return null;
+}
+function formatDateIT(d){
+  try{
+    return new Intl.DateTimeFormat('it-IT', { weekday:'long', day:'numeric', month:'long', year:'numeric' }).format(d);
+  }catch{ return ''; }
+}
+// normalizza ora: “16.30”→“16:30”, “1630”→“16:30”
+function normalizeTime(s){
+  let v=String(s||'').trim();
+  if(!v) return '';
+  v=v.replace('.',':');
+  if(/^\d{4}$/.test(v)) v=v.slice(0,2)+':'+v.slice(2);
+  if(/^\d{1,2}:\d{2}$/.test(v)) return v;
+  const m=v.match(/(\d{1,2})[:.]?(\d{2})/);
+  return m ? `${m[1].padStart(2,'0')}:${m[2]}` : v;
+}
+// CAMPO: prendi da Meta con tante varianti di chiave
+function getCampoForSquadra1(meta){
+  const candidates = [
+    'campo','campo1','campo_squadra1','camposquadra1','campo squadra1','campo squadra 1',
+    'campo casa','campo_base','impianto','impiantodigioco','impianto di gioco','stadio'
+  ];
+  for(const k of candidates){
+    const v = meta.get(k);
+    if(v) return v;
+  }
+  // fallback: qualsiasi chiave che contenga "campo"
+  for(const [k,v] of meta){
+    if(/campo|impianto|stadio/i.test(k) && v) return v;
+  }
+  return '';
+}
+// ripulisci parole “campo/stadio/comunale” solo come parole intere
 function cleanFieldName(s){
   return String(s||'')
     .replace(/\b(campo|stadio|comunale)\b/gi,'')
@@ -117,9 +152,7 @@ function cleanFieldName(s){
 }
 
 /* Font readiness (Oswald) */
-async function waitFonts(){
-  if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(_) {} }
-}
+async function waitFonts(){ if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch{} } }
 
 /* ===== Layout: blocchi loghi ===== */
 function layoutSide(stageEl, sideEl, cx, cy, scale=1){
@@ -140,73 +173,47 @@ function layoutTeams(stageEl){
   const W = stageEl.clientWidth, H = stageEl.clientHeight;
   const vsX = W * K.VS_X_RATIO;
   const vsY = H * (K.VS_Y_RATIO + K.RAIL_Y_SHIFT_RATIO);
-
-  const theta = K.ANGLE_DEG * Math.PI/180, dx = Math.cos(theta), dy = Math.sin(theta);
-  const L = W * K.LEFT_OFFSET_RATIO, R = W * K.RIGHT_OFFSET_RATIO;
-
-  let leftX  = vsX - dx * L, leftY  = vsY - dy * L;
-  let rightX = vsX + dx * R, rightY = vsY + dy * R;
-
-  leftY  += H * K.SIDE1_Y_EXTRA_RATIO;
-  rightY += H * K.SIDE2_Y_EXTRA_RATIO;
-
-  layoutSide(stageEl, document.getElementById('side1'), leftX,  leftY, K.SCALE1);
-  layoutSide(stageEl, document.getElementById('side2'), rightX, rightY, K.SCALE2);
+  const th = K.ANGLE_DEG * Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
+  const L = W*K.LEFT_OFFSET_RATIO, R=W*K.RIGHT_OFFSET_RATIO;
+  let lX=vsX-dx*L, lY=vsY-dy*L, rX=vsX+dx*R, rY=vsY+dy*R;
+  lY += H*K.SIDE1_Y_EXTRA_RATIO; rY += H*K.SIDE2_Y_EXTRA_RATIO;
+  layoutSide(stageEl, document.getElementById('side1'), lX, lY, K.SCALE1);
+  layoutSide(stageEl, document.getElementById('side2'), rX, rY, K.SCALE2);
 }
 
-/* ===== Layout: blocco info a destra del MATCH DAY ===== */
+/* ===== Layout: blocco info a destra di MATCH DAY ===== */
 function layoutInfo(stageEl){
   const W = stageEl.clientWidth, H = stageEl.clientHeight;
-  // punto base (vicino al banner MATCH DAY)
-  const baseX = W * K.INFO_BASE_X_RATIO;
-  const baseY = H * K.INFO_BASE_Y_RATIO;
-
-  const theta = K.ANGLE_DEG * Math.PI/180;
-  const dx = Math.cos(theta), dy = Math.sin(theta);
-
-  // spostamento lungo la retta (in % larghezza)
-  const along = W * K.INFO_ALONG_RATIO;
-
-  // spostamento perpendicolare (in % altezza) -> vettore n = (-sin, cos)
-  const perp = H * K.INFO_Y_EXTRA_RATIO;
-  const nx = -Math.sin(theta), ny = Math.cos(theta);
-
+  const baseX=W*K.INFO_BASE_X_RATIO, baseY=H*K.INFO_BASE_Y_RATIO;
+  const th=K.ANGLE_DEG*Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
+  const along=W*K.INFO_ALONG_RATIO;
+  const perp =H*K.INFO_Y_EXTRA_RATIO;
+  const nx=-Math.sin(th), ny=Math.cos(th);
   const cx = baseX + dx*along + nx*perp;
   const cy = baseY + dy*along + ny*perp;
-
   const info = document.getElementById('info');
-  const fontPx = H * K.INFO_FONT_RATIO * K.INFO_FONT_SCALE;
-
-  info.style.left = `${cx}px`;
-  info.style.top  = `${cy}px`;
+  const fontPx = H*K.INFO_FONT_RATIO*K.INFO_FONT_SCALE;
+  info.style.left = `${cx}px`; info.style.top = `${cy}px`;
   info.style.setProperty('--angle', `${K.ANGLE_DEG}deg`);
   info.style.setProperty('--infoFontPx', `${fontPx}px`);
 }
 
 /* ===== DOM ===== */
 const $ = s=>document.querySelector(s);
-const stage  = $('#stage');
-const bg     = $('#bg');
-const side1  = $('#side1');
-const side2  = $('#side2');
-const logo1  = $('#logo1');
-const logo2  = $('#logo2');
-const name1  = $('#name1');
-const name2  = $('#name2');
-const infoText = $('#infoText');
-const statusEl = $('#status');
+const stage=$('#stage'), bg=$('#bg');
+const logo1=$('#logo1'), logo2=$('#logo2');
+const name1=$('#name1'), name2=$('#name2');
+const infoText=$('#infoText'); const statusEl=$('#status');
 
 /* ===== UI (manopole) ===== */
 function bindKnob(id, key, fmt=(v)=>v){
-  const el = document.getElementById(id);
+  const el = document.getElementById(id); if(!el) return;
   const out = document.getElementById('val_'+id.split('_')[1]);
-  el.value = K[key];
-  out.textContent = fmt(K[key]);
+  el.value = K[key]; if(out) out.textContent = fmt(K[key]);
   el.addEventListener('input', ()=>{
-    const t = Number(el.value);
-    K[key] = t;
+    const t = Number(el.value); K[key]=t;
     localStorage.setItem(LS_KEY, JSON.stringify(K));
-    out.textContent = fmt(t);
+    if(out) out.textContent = fmt(t);
     layoutAll();
   });
 }
@@ -235,7 +242,7 @@ async function loadAndRender(){
     const meta = normalizeMeta(metaRows);
     const opp  = normalizeOpp(oppRows);
 
-    if (!bg.complete) await new Promise(r => { bg.onload = r; bg.onerror = r; });
+    if (!bg.complete) await new Promise(r => { bg.onload=r; bg.onerror=r; });
 
     // squadre
     const squadra1 = (meta.get('squadra1') || 'Petriolese').trim();
@@ -254,56 +261,66 @@ async function loadAndRender(){
       new Promise(res=>{ logo2.onload=()=>res(); logo2.onerror=()=>{logo2.onerror=null; logo2.src=fb2; res();}; logo2.src=src2; })
     ]);
 
-    // info text: DATA / ORA / CAMPO SQUADRA1 (ripulito) / PAESE
-    const data = meta.get('data') || meta.get('giorno') || meta.get('date') || '';
-    const ora  = meta.get('ora')  || meta.get('orario')|| meta.get('time') || '';
-    const campoRaw = meta.get('campo') || meta.get('campo1') || meta.get('impianto') || '';
-    const campo = cleanFieldName(campoRaw);
-    const paese = resolvePaese(squadra1, opp, '');  // paese associato alla squadra1 in Avversari
+    /* ===== INFO TEXT ===== */
+    // DATA → “sabato 6 settembre 2025”
+    let dataTxt = '';
+    const d = parseDateSmart(meta.get('data') || meta.get('giorno') || meta.get('date') || '');
+    if(d) dataTxt = formatDateIT(d);
 
-    const lines = [data, ora, campo, paese].filter(Boolean);
-    infoText.textContent = lines.join('\n'); // white-space:pre in CSS
+    // ORA → “ORE 16:30”
+    const oraRaw = meta.get('ora') || meta.get('orario') || meta.get('time') || '';
+    const oraNorm = normalizeTime(oraRaw);
+    const oraTxt = oraNorm ? `ORE ${oraNorm}` : '';
+
+    // CAMPO SQUADRA1 (ripulito)
+    const campoRaw = getCampoForSquadra1(meta);
+    const campoTxt = cleanFieldName(campoRaw);
+
+    // PAESE da Avversari (squadra1)
+    const paese = resolvePaese(squadra1, opp, '');
+
+    // Componi (tienilo anche se campo è vuoto, ora non lo filtriamo più via .filter(Boolean))
+    const lines = [];
+    if(dataTxt) lines.push(dataTxt);
+    if(oraTxt)  lines.push(oraTxt);
+    lines.push(campoTxt || '');  // mostra riga anche se vuota? se preferisci nascondere, rimetti il filtro
+    if(paese)   lines.push(paese);
+    document.getElementById('infoText').textContent = lines.join('\n');
 
     layoutAll();
     statusEl.innerHTML = ` <span style="color:#8ff59a">OK</span> — <strong>${squadra1}</strong> vs <strong>${squadra2}</strong>`;
   }catch(err){
     console.error(err);
-    infoText.textContent = '';
+    document.getElementById('infoText').textContent = '';
     layoutAll();
     statusEl.innerHTML = ` <span style="color:#ffd36d">fallback</span> — controlla permessi o pubblicazione`;
   }
 }
 
-function layoutAll(){
-  layoutTeams(stage);
-  layoutInfo(stage);
-}
+function layoutAll(){ layoutTeams(stage); layoutInfo(stage); }
 
 /* ===== Export PNG ===== */
 async function downloadPNG(){
   const TARGET_W = 3508, TARGET_H = 4961;
-
   const clone = stage.cloneNode(true);
-  clone.style.width  = TARGET_W + 'px';
-  clone.style.height = TARGET_H + 'px';
+  clone.style.width  = TARGET_W+'px'; clone.style.height = TARGET_H+'px';
   clone.style.boxShadow='none'; clone.style.borderRadius='0';
   clone.style.position='fixed'; clone.style.left='-99999px'; clone.style.top='-99999px';
   document.body.appendChild(clone);
   const cBg = clone.querySelector('#bg');
   if (!cBg.complete) await new Promise(r=>{ cBg.onload=r; cBg.onerror=r; });
 
-  // applica gli stessi layout sul clone
   (function applyClone(){
-    const W = clone.clientWidth, H = clone.clientHeight;
-    // team blocks
-    const vsX = W*K.VS_X_RATIO, vsY = H*(K.VS_Y_RATIO+K.RAIL_Y_SHIFT_RATIO);
-    const th = K.ANGLE_DEG*Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
+    const W=clone.clientWidth, H=clone.clientHeight;
+    // team
+    const vsX=W*K.VS_X_RATIO, vsY=H*(K.VS_Y_RATIO+K.RAIL_Y_SHIFT_RATIO);
+    const th=K.ANGLE_DEG*Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
     const L=W*K.LEFT_OFFSET_RATIO, R=W*K.RIGHT_OFFSET_RATIO;
     let lX=vsX-dx*L, lY=vsY-dy*L, rX=vsX+dx*R, rY=vsY+dy*R;
-    lY += H*K.SIDE1_Y_EXTRA_RATIO; rY += H*K.SIDE2_Y_EXTRA_RATIO;
+    lY+=H*K.SIDE1_Y_EXTRA_RATIO; rY+=H*K.SIDE2_Y_EXTRA_RATIO;
 
     const placeSide=(sel,cx,cy,scale)=>{
-      const el = clone.querySelector(sel);
+      const el=clone.querySelector(sel);
       const logoH=H*K.LOGO_H_RATIO*scale, nameGap=H*K.NAME_GAP_RATIO, nameFont=H*K.NAME_FONT_RATIO;
       el.style.left=`${cx}px`; el.style.top=`${cy}px`;
       el.style.setProperty('--angle', `${K.ANGLE_DEG}deg`);
@@ -315,34 +332,26 @@ async function downloadPNG(){
     placeSide('#side1', lX, lY, K.SCALE1);
     placeSide('#side2', rX, rY, K.SCALE2);
 
-    // info block
+    // info
     const baseX=W*K.INFO_BASE_X_RATIO, baseY=H*K.INFO_BASE_Y_RATIO;
     const along=W*K.INFO_ALONG_RATIO, perp=H*K.INFO_Y_EXTRA_RATIO;
     const nx=-Math.sin(th), ny=Math.cos(th);
-    const iX = baseX + dx*along + nx*perp;
-    const iY = baseY + dy*along + ny*perp;
-    const info = clone.querySelector('#info');
-    const infoFontPx = H*K.INFO_FONT_RATIO*K.INFO_FONT_SCALE;
+    const iX=baseX+dx*along+nx*perp, iY=baseY+dy*along+ny*perp;
+    const info=clone.querySelector('#info');
+    const fontPx=H*K.INFO_FONT_RATIO*K.INFO_FONT_SCALE;
     info.style.left=`${iX}px`; info.style.top=`${iY}px`;
     info.style.setProperty('--angle', `${K.ANGLE_DEG}deg`);
-    info.style.setProperty('--infoFontPx', `${infoFontPx}px`);
+    info.style.setProperty('--infoFontPx', `${fontPx}px`);
   })();
 
   await waitFonts();
-  const canvas = await html2canvas(clone, {
-    backgroundColor: null,
-    useCORS: true,
-    scale: 1,
-    width: TARGET_W, height: TARGET_H
-  });
+  const canvas = await html2canvas(clone, { backgroundColor:null, useCORS:true, scale:1, width:TARGET_W, height:TARGET_H });
   document.body.removeChild(clone);
 
   const blob = await new Promise(res=> canvas.toBlob(b=>res(b), 'image/png', 0.98));
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `cover_${new Date().toISOString().slice(0,10)}.png`;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href=url; a.download=`cover_${new Date().toISOString().slice(0,10)}.png`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
 /* ===== Wireup ===== */
