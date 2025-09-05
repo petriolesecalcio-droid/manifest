@@ -7,11 +7,11 @@ const OPP_GID       = '1284472120';  // linguetta "Avversari"
 const PUBLISHED_DOC_E_ID = '2PACX-1vSpJqXmoJaIznEo_EGHCfUxyYVWWKJCGULM9FbnI14hLhGpsjt3oMHT5ahJwEmJ4w';
 
 /* ===== Parametri geometrici ===== */
-const ANGLE_DEG          = -8;   // << tua richiesta
+const ANGLE_DEG          = -8;   // come da tua impostazione
 const VS_X_RATIO         = 0.50;
 const VS_Y_RATIO         = 0.57;
-const LEFT_OFFSET_RATIO  = 0.25; // << tua richiesta
-const RIGHT_OFFSET_RATIO = 0.25; // << tua richiesta
+const LEFT_OFFSET_RATIO  = 0.25; // come da tua impostazione
+const RIGHT_OFFSET_RATIO = 0.25; // come da tua impostazione
 const LOGO_H_RATIO       = 0.12;
 const NAME_GAP_RATIO     = 0.018;
 const NAME_FONT_RATIO    = 0.038;
@@ -94,7 +94,7 @@ async function waitFonts(){
 
 /* ===== Layout obliquo ===== */
 function layoutOblique(stageEl, sideEl, cx, cy){
-  const H = stageEl.clientHeight, W = stageEl.clientWidth;
+  const H = stageEl.clientHeight;
   const logoH   = H * LOGO_H_RATIO;
   const nameGap = H * NAME_GAP_RATIO;
   const nameFont= H * NAME_FONT_RATIO;
@@ -154,7 +154,7 @@ async function loadAndRender(){
 
     name1.textContent = squadra1;
     name2.textContent = squadra2;
-    await waitFonts(); // assicurati che Oswald sia pronto prima del layout
+    await waitFonts(); // Oswald pronto
 
     // carica logo1 con fallback
     const src1 = resolveLogoSrc(squadra1, opp);
@@ -179,8 +179,8 @@ async function loadAndRender(){
   }catch(err){
     console.error(err);
     if (!bg.complete) await new Promise(r => { bg.onload = r; bg.onerror = r; });
-    name1.textContent = 'Petriolese';
-    name2.textContent = 'Avversari';
+    name1.textContent = 'PetRIOLESE';
+    name2.textContent = 'AVVERSARI';
     await waitFonts();
     logo1.src = 'logos/petriolese.webp';
     logo2.src = 'logos/moglianese.webp';
@@ -232,7 +232,7 @@ async function downloadPNG(){
     place('#side2', rightX, rightY);
   })();
 
-  await waitFonts();
+  await waitFonts(); // Oswald pronto anche sul clone
   const canvas = await html2canvas(clone, {
     backgroundColor: null,
     useCORS: true,
