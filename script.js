@@ -135,6 +135,12 @@ const name1  = $('#name1');
 const name2  = $('#name2');
 const statusEl = $('#status');
 
+async function waitFonts(){
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch(_) {}
+  }
+}
+
 async function loadAndRender(){
   try{
     statusEl.textContent = ' (carico dallo sheet...)';
@@ -150,10 +156,10 @@ async function loadAndRender(){
 
     const squadra1 = (meta.get('squadra1') || 'Petriolese').trim();
     const squadra2 = (meta.get('squadra2') || 'Avversari').trim();
-
+   
     name1.textContent = squadra1;
     name2.textContent = squadra2;
-
+      await waitFonts(); 
     // carica logo1 con fallback
     const src1 = resolveLogoSrc(squadra1, opp);
     const fb1  = `logos/${slugify(squadra1)}.webp`;
@@ -229,7 +235,7 @@ async function downloadPNG(){
     place('#side1', leftX, leftY);
     place('#side2', rightX, rightY);
   })();
-
+await waitFonts(); 
   const canvas = await html2canvas(clone, {
     backgroundColor: null,
     useCORS: true,
