@@ -6,15 +6,17 @@ const OPP_GID       = '1284472120';  // linguetta "Avversari"
 /* Unico E-ID del documento pubblicato (File → Pubblica sul web) */
 const PUBLISHED_DOC_E_ID = '2PACX-1vSpJqXmoJaIznEo_EGHCfUxyYVWWKJCGULM9FbnI14hLhGpsjt3oMHT5ahJwEmJ4w';
 
-/* ===== Anchor del “VS” nello sfondo (percentuali pagina) =====
-   Regola questi valori per seguire perfettamente il tuo template */
-const VS_X_RATIO         = 0.50;  // X del VS
-const VS_Y_RATIO         = 0.57;  // Y del VS
-const LEFT_OFFSET_RATIO  = 0.32;  // distanza del centro logo1 a sinistra del VS
-const RIGHT_OFFSET_RATIO = 0.32;  // distanza del centro logo2 a destra del VS
-const LOGO_H_RATIO       = 0.12;  // altezza loghi (in % dell'altezza pagina)
-const NAME_GAP_RATIO     = 0.018; // gap verticale tra logo e nome (in % dell'altezza pagina)
-const NAME_FONT_RATIO    = 0.038; // font-size nome (in % dell'altezza pagina)
+/* ===== Parametri geometrici =====
+   ANGLE_DEG: rotazione (negativa = antioraria) per allinearsi al "VS".
+   Offsets: distanza lungo la retta obliqua (in % larghezza pagina) */
+const ANGLE_DEG          = -12; // ← regola per matchare esattamente l’inclinazione del tuo VS
+const VS_X_RATIO         = 0.50;
+const VS_Y_RATIO         = 0.57;
+const LEFT_OFFSET_RATIO  = 0.32;
+const RIGHT_OFFSET_RATIO = 0.32;
+const LOGO_H_RATIO       = 0.12;
+const NAME_GAP_RATIO     = 0.018;
+const NAME_FONT_RATIO    = 0.038;
 
 /* ===== Helpers Sheet ===== */
 const gvizCsvURL=(fileId,gid)=>
@@ -51,7 +53,6 @@ const slugify = s => String(s||'')
   .toLowerCase().replace(/&/g,'and')
   .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 
-// normalizza chiavi: minuscolo, senza spazi
 const normKey = k => String(k||'').trim().toLowerCase().replace(/\s+/g,'');
 
 function normalizeMeta(rows){
@@ -73,12 +74,11 @@ function normalizeOpp(rows){
   return out;
 }
 
-// se nello sheet metti solo "petriolese.webp", prefissa "logos/"
 function normalizeLogoUrl(s){
   const v = String(s||'').trim();
   if(!v) return '';
-  if(/^https?:\/\//i.test(v) || v.startsWith('data:')) return v;         // URL assoluta o data URL
-  if(v.startsWith('logos/') || v.startsWith('./') || v.startsWith('../')) return v; // relativo già ok
+  if(/^https?:\/\//i.test(v) || v.startsWith('data:')) return v;
+  if(v.startsWith('logos/') || v.startsWith('./') || v.startsWith('../')) return v;
   return 'logos/' + v.replace(/^\/+/, '');
 }
 function resolveLogoSrc(teamName, oppMap){
@@ -88,45 +88,47 @@ function resolveLogoSrc(teamName, oppMap){
   return `logos/${slugify(name)}.webp`;
 }
 
-/* ===== Layout ===== */
-function layoutSide(stageEl, centerX, centerY, logoEl, nameEl){
-  const STAGE_W = stageEl.clientWidth;
-  const STAGE_H = stageEl.clientHeight;
+/* ===== Layout obliquo (stessa rotazione per loghi+nomi) ===== */
+function layoutOblique(stageEl, sideEl, centerX, centerY){
+  const H = stageEl.clientHeight, W = stageEl.clientWidth;
+  const logoH   = H * LOGO_H_RATIO;
+  const nameGap = H * NAME_GAP_RATIO;
+  const nameFont= H * NAME_FONT_RATIO;
 
-  const logoH = STAGE_H * LOGO_H_RATIO;
-  const logoW = logoH;
-  const nameGap  = STAGE_H * NAME_GAP_RATIO;
-  const nameFont = STAGE_H * NAME_FONT_RATIO;
+  sideEl.style.left = `${centerX}px`;
+  sideEl.style.top  = `${centerY}px`;
 
-  // logo
-  logoEl.style.width  = `${logoW}px`;
-  logoEl.style.height = `${logoH}px`;
-  logoEl.style.left   = `${(centerX - logoW/2)}px`;
-  logoEl.style.top    = `${(centerY - logoH/2)}px`;
-
-  // nome (centrato sotto il logo)
-  nameEl.style.fontSize = `${nameFont}px`;
-  nameEl.style.left     = `${centerX}px`;
-  nameEl.style.top      = `${(centerY + logoH/2 + nameGap)}px`;
+  sideEl.style.setProperty('--angle', `${ANGLE_DEG}deg`);
+  sideEl.style.setProperty('--logoHpx', `${logoH}px`);
+  sideEl.style.setProperty('--logoWpx', `${logoH}px`);
+  sideEl.style.setProperty('--nameGapPx', `${nameGap}px`);
+  sideEl.style.setProperty('--nameFontPx', `${nameFont}px`);
 }
 
-function layoutBoth(stageEl, logo1, name1, logo2, name2){
-  const STAGE_W = stageEl.clientWidth;
-  const STAGE_H = stageEl.clientHeight;
-  const vsX = STAGE_W * VS_X_RATIO;
-  const vsY = STAGE_H * VS_Y_RATIO;
+function layoutBoth(stageEl){
+  const W = stageEl.clientWidth, H = stageEl.clientHeight;
+  const vsX = W * VS_X_RATIO, vsY = H * VS_Y_RATIO;
+  const theta = ANGLE_DEG * Math.PI / 180;
+  const dx = Math.cos(theta), dy = Math.sin(theta);
 
-  const leftCenterX  = vsX - (STAGE_W * LEFT_OFFSET_RATIO);
-  const rightCenterX = vsX + (STAGE_W * RIGHT_OFFSET_RATIO);
+  const L = W * LEFT_OFFSET_RATIO;
+  const R = W * RIGHT_OFFSET_RATIO;
 
-  layoutSide(stageEl, leftCenterX,  vsY, logo1, name1);
-  layoutSide(stageEl, rightCenterX, vsY, logo2, name2);
+  const leftX  = vsX - dx * L;
+  const leftY  = vsY - dy * L;
+  const rightX = vsX + dx * R;
+  const rightY = vsY + dy * R;
+
+  layoutOblique(stageEl, document.getElementById('side1'), leftX,  leftY);
+  layoutOblique(stageEl, document.getElementById('side2'), rightX, rightY);
 }
 
 /* ===== DOM & Render ===== */
 const $ = s=>document.querySelector(s);
 const stage  = $('#stage');
 const bg     = $('#bg');
+const side1  = $('#side1');
+const side2  = $('#side2');
 const logo1  = $('#logo1');
 const logo2  = $('#logo2');
 const name1  = $('#name1');
@@ -146,9 +148,8 @@ async function loadAndRender(){
 
     if (!bg.complete) await new Promise(r => { bg.onload = r; bg.onerror = r; });
 
-    // meta keys robusti (accettiamo "squadra1" o "squadra 1")
-    const squadra1 = (meta.get('squadra1') || meta.get('squadra1') || meta.get('squadra 1') || 'Petriolese').trim();
-    const squadra2 = (meta.get('squadra2') || meta.get('squadra2') || meta.get('squadra 2') || 'Avversari').trim();
+    const squadra1 = (meta.get('squadra1') || 'Petriolese').trim();
+    const squadra2 = (meta.get('squadra2') || 'Avversari').trim();
 
     name1.textContent = squadra1;
     name2.textContent = squadra2;
@@ -171,21 +172,22 @@ async function loadAndRender(){
       logo2.src = src2;
     });
 
-    layoutBoth(stage, logo1, name1, logo2, name2);
+    layoutBoth(stage);
     statusEl.innerHTML = ` <span style="color:#8ff59a">OK</span> — <strong>${squadra1}</strong> vs <strong>${squadra2}</strong>`;
   }catch(err){
     console.error(err);
     if (!bg.complete) await new Promise(r => { bg.onload = r; bg.onerror = r; });
+
     name1.textContent = 'Petriolese';
     name2.textContent = 'Avversari';
     logo1.src = 'logos/petriolese.webp';
-    logo2.src = 'logos/moglianese.webp'; // placeholder secondario, se vuoi sostituisci
-    layoutBoth(stage, logo1, name1, logo2, name2);
+    logo2.src = 'logos/moglianese.webp';
+    layoutBoth(stage);
     statusEl.innerHTML = ` <span style="color:#ffd36d">fallback</span> — controlla permessi o pubblicazione`;
   }
 }
 
-function relayout(){ layoutBoth(stage, logo1, name1, logo2, name2); }
+function relayout(){ layoutBoth(stage); }
 
 /* ===== Export PNG A3 300dpi ===== */
 async function downloadPNG(){
@@ -201,14 +203,32 @@ async function downloadPNG(){
   clone.style.top  = '-99999px';
   document.body.appendChild(clone);
 
-  const cLogo1 = clone.querySelector('#logo1');
-  const cLogo2 = clone.querySelector('#logo2');
-  const cName1 = clone.querySelector('#name1');
-  const cName2 = clone.querySelector('#name2');
-  const cBg    = clone.querySelector('#bg');
-
+  const cBg = clone.querySelector('#bg');
   if (!cBg.complete) await new Promise(r => { cBg.onload = r; cBg.onerror = r; });
-  layoutBoth(clone, cLogo1, cName1, cLogo2, cName2);
+
+  // rilayout sul clone (usa gli stessi parametri/angolo)
+  (function(){
+    const W = clone.clientWidth, H = clone.clientHeight;
+    const vsX = W * VS_X_RATIO, vsY = H * VS_Y_RATIO;
+    const theta = ANGLE_DEG * Math.PI / 180, dx = Math.cos(theta), dy = Math.sin(theta);
+    const L = W * LEFT_OFFSET_RATIO, R = W * RIGHT_OFFSET_RATIO;
+
+    const leftX  = vsX - dx * L, leftY  = vsY - dy * L;
+    const rightX = vsX + dx * R, rightY = vsY + dy * R;
+
+    const place = (sel,cx,cy)=>{
+      const el = clone.querySelector(sel);
+      const logoH = H * LOGO_H_RATIO, nameGap = H * NAME_GAP_RATIO, nameFont = H * NAME_FONT_RATIO;
+      el.style.left = `${cx}px`; el.style.top = `${cy}px`;
+      el.style.setProperty('--angle', `${ANGLE_DEG}deg`);
+      el.style.setProperty('--logoHpx', `${logoH}px`);
+      el.style.setProperty('--logoWpx', `${logoH}px`);
+      el.style.setProperty('--nameGapPx', `${nameGap}px`);
+      el.style.setProperty('--nameFontPx', `${nameFont}px`);
+    };
+    place('#side1', leftX, leftY);
+    place('#side2', rightX, rightY);
+  })();
 
   const canvas = await html2canvas(clone, {
     backgroundColor: null,
