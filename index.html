@@ -43,21 +43,29 @@
     width:100%; height:100%;
     object-fit:contain; display:block;
   }
-  /* Loghi */
-  #logo1, #logo2{
-    position:absolute; display:block; object-fit:contain;
+
+  /* Contenitori obliqui (logo + nome) */
+  .side{
+    position:absolute;
+    display:flex; flex-direction:column; align-items:center;
+    /* ancoriamo il centro del contenitore alla posizione calcolata */
+    transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
+    transform-origin: center center;
+  }
+  .side .logo{
+    display:block; object-fit:contain;
+    width: var(--logoWpx, 200px);
+    height: var(--logoHpx, 200px);
     filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
   }
-  /* Nomi squadre */
-  .team-name{
-    position:absolute;
-    transform: translateX(-50%);
-    text-align:center;
+  .side .team-name{
+    margin-top: var(--nameGapPx, 12px);
     font-weight:800;
     letter-spacing:.3px;
-    color:#d4d6db;            /* grigio chiaro leggibile */
+    color:#d4d6db;
     text-shadow: 0 1px 2px rgba(0,0,0,.45);
-    white-space:nowrap;       /* niente a capo sotto il logo */
+    white-space:nowrap;
+    font-size: var(--nameFontPx, 40px);
   }
 
   .note{ font-size:14px; opacity:.85; }
@@ -79,12 +87,15 @@
     <div id="stage" class="stage" aria-label="Copertina Matchday">
       <!-- Sfondo -->
       <img id="bg" src="fixed.svg" alt="Sfondo" />
-      <!-- Logos -->
-      <img id="logo1" alt="Logo squadra 1" crossorigin="anonymous" />
-      <img id="logo2" alt="Logo squadra 2" crossorigin="anonymous" />
-      <!-- Nomi -->
-      <div id="name1" class="team-name"></div>
-      <div id="name2" class="team-name"></div>
+      <!-- Blocchi obliqui -->
+      <div id="side1" class="side">
+        <img id="logo1" class="logo" alt="Logo squadra 1" crossorigin="anonymous" />
+        <div id="name1" class="team-name"></div>
+      </div>
+      <div id="side2" class="side">
+        <img id="logo2" class="logo" alt="Logo squadra 2" crossorigin="anonymous" />
+        <div id="name2" class="team-name"></div>
+      </div>
     </div>
   </main>
 
