@@ -65,37 +65,34 @@
       <details class="tuning">
         <summary>⚙️ Manopole</summary>
         <div class="grid">
-          <div class="lbl">Angolo (tutto)</div>          <input id="k_angle" type="range" min="-20" max="20" step="0.5"><span class="val"></span>
-          <div class="lbl">Rail Y (globale)</div>        <input id="k_rail" type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
-
-          <div class="group"><strong>Blocchi squadre</strong></div>
-          <div class="lbl">Sinistra – distanza</div>     <input id="k_left" type="range" min="0.10" max="0.50" step="0.005"><span class="val"></span>
-          <div class="lbl">Sinistra – scala logo</div>   <input id="k_scale1" type="range" min="0.6" max="1.6" step="0.02"><span class="val"></span>
-          <div class="lbl">Sinistra – Y extra</div>      <input id="k_y1" type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
-          <div class="lbl">Destra – distanza</div>       <input id="k_right" type="range" min="0.10" max="0.50" step="0.005"><span class="val"></span>
-          <div class="lbl">Destra – scala logo</div>     <input id="k_scale2" type="range" min="0.6" max="1.6" step="0.02"><span class="val"></span>
-          <div class="lbl">Destra – Y extra</div>        <input id="k_y2" type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
+          <div class="group"><strong>Squadre (loghi + nomi) — controlli unificati</strong></div>
+          <div class="lbl">Angolo squadre</div>     <input id="k_team_angle" type="range" min="-20" max="20" step="0.5"><span class="val"></span>
+          <div class="lbl">Rail Y (squadre)</div>   <input id="k_team_rail"  type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
+          <div class="lbl">Distanza VS</div>        <input id="k_team_dist"  type="range" min="0.10" max="0.50" step="0.005"><span class="val"></span>
+          <div class="lbl">Scala logo</div>         <input id="k_team_scale" type="range" min="0.6" max="1.6" step="0.02"><span class="val"></span>
+          <div class="lbl">Y extra (entrambi)</div> <input id="k_team_y"     type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
 
           <div class="group"><strong>Info (a destra di MATCH DAY)</strong></div>
+          <div class="lbl">Angolo info</div>        <input id="k_info_angle" type="range" min="-20" max="20" step="0.5"><span class="val"></span>
           <div class="lbl">Ancora info – lungo retta</div><input id="k_info_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">Ancora info – Y extra</div>   <input id="k_info_y" type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
+          <div class="lbl">Ancora info – Y extra</div>   <input id="k_info_y"     type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
 
           <div class="group"><em>Per-riga</em></div>
-          <div class="lbl">DATA – scala</div>            <input id="k_date_scale"  type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
-          <div class="lbl">DATA – lungo retta</div>      <input id="k_date_along"  type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">DATA – Y extra</div>          <input id="k_date_y"      type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
+          <div class="lbl">DATA – scala</div>       <input id="k_date_scale"  type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
+          <div class="lbl">DATA – lungo retta</div> <input id="k_date_along"  type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
+          <div class="lbl">DATA – Y extra</div>     <input id="k_date_y"      type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
 
-          <div class="lbl">ORA – scala</div>             <input id="k_time_scale"  type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
-          <div class="lbl">ORA – lungo retta</div>       <input id="k_time_along"  type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">ORA – Y extra</div>           <input id="k_time_y"      type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
+          <div class="lbl">ORA – scala</div>        <input id="k_time_scale"  type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
+          <div class="lbl">ORA – lungo retta</div>  <input id="k_time_along"  type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
+          <div class="lbl">ORA – Y extra</div>      <input id="k_time_y"      type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
 
-          <div class="lbl">CAMPO – scala</div>           <input id="k_field_scale" type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
-          <div class="lbl">CAMPO – lungo retta</div>     <input id="k_field_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">CAMPO – Y extra</div>         <input id="k_field_y"     type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
+          <div class="lbl">CAMPO – scala</div>      <input id="k_field_scale" type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
+          <div class="lbl">CAMPO – lungo retta</div><input id="k_field_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
+          <div class="lbl">CAMPO – Y extra</div>    <input id="k_field_y"     type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
 
-          <div class="lbl">PAESE – scala</div>           <input id="k_paese_scale" type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
-          <div class="lbl">PAESE – lungo retta</div>     <input id="k_paese_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
-          <div class="lbl">PAESE – Y extra</div>         <input id="k_paese_y"     type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
+          <div class="lbl">PAESE – scala</div>      <input id="k_paese_scale" type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
+          <div class="lbl">PAESE – lungo retta</div><input id="k_paese_along" type="range" min="-0.40" max="0.60" step="0.005"><span class="val"></span>
+          <div class="lbl">PAESE – Y extra</div>    <input id="k_paese_y"     type="range" min="-0.20" max="0.20" step="0.002"><span class="val"></span>
         </div>
       </details>
 
