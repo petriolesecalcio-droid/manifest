@@ -37,20 +37,25 @@
     display:grid; place-items:center; padding:16px;
   }
   /* preview responsiva ma con aspect ratio A3 */
+
   .stage{
     position:relative;
     width:min(96vw, 1100px);
     aspect-ratio: 3508 / 4961;
-    background: #0b0c11 url('fixed.svg') center / contain no-repeat;
     box-shadow: 0 20px 60px rgba(0,0,0,.5);
     border-radius:12px;
     overflow:hidden;
+    background:#0b0c11; /* solo fallback */
   }
-
-  /* logo sovrapposto */
+  /* background come IMG (non CSS background) */
+  #bg{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:contain;
+    display:block;
+  }
   #logo1{
     position:absolute; display:block; object-fit:contain;
-    /* sarà dimensionato/posizionato via JS in base a out-w/out-h */
     filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
   }
 
