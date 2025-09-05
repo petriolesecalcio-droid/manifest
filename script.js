@@ -6,14 +6,12 @@ const OPP_GID       = '1284472120';  // linguetta "Avversari"
 /* Unico E-ID del documento pubblicato (File → Pubblica sul web) */
 const PUBLISHED_DOC_E_ID = '2PACX-1vSpJqXmoJaIznEo_EGHCfUxyYVWWKJCGULM9FbnI14hLhGpsjt3oMHT5ahJwEmJ4w';
 
-/* ===== Parametri geometrici =====
-   ANGLE_DEG: rotazione (negativa = antioraria) per allinearsi al "VS".
-   Offsets: distanza lungo la retta obliqua (in % larghezza pagina) */
-const ANGLE_DEG          = -8; // ← regola per matchare esattamente l’inclinazione del tuo VS
+/* ===== Parametri geometrici ===== */
+const ANGLE_DEG          = -8;   // << tua richiesta
 const VS_X_RATIO         = 0.50;
 const VS_Y_RATIO         = 0.57;
-const LEFT_OFFSET_RATIO  = 0.25;
-const RIGHT_OFFSET_RATIO = 0.25;
+const LEFT_OFFSET_RATIO  = 0.25; // << tua richiesta
+const RIGHT_OFFSET_RATIO = 0.25; // << tua richiesta
 const LOGO_H_RATIO       = 0.12;
 const NAME_GAP_RATIO     = 0.018;
 const NAME_FONT_RATIO    = 0.038;
@@ -73,7 +71,6 @@ function normalizeOpp(rows){
   });
   return out;
 }
-
 function normalizeLogoUrl(s){
   const v = String(s||'').trim();
   if(!v) return '';
@@ -88,16 +85,22 @@ function resolveLogoSrc(teamName, oppMap){
   return `logos/${slugify(name)}.webp`;
 }
 
-/* ===== Layout obliquo (stessa rotazione per loghi+nomi) ===== */
-function layoutOblique(stageEl, sideEl, centerX, centerY){
+/* ===== Font readiness (per Oswald nell’export) ===== */
+async function waitFonts(){
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch(_) {}
+  }
+}
+
+/* ===== Layout obliquo ===== */
+function layoutOblique(stageEl, sideEl, cx, cy){
   const H = stageEl.clientHeight, W = stageEl.clientWidth;
   const logoH   = H * LOGO_H_RATIO;
   const nameGap = H * NAME_GAP_RATIO;
   const nameFont= H * NAME_FONT_RATIO;
 
-  sideEl.style.left = `${centerX}px`;
-  sideEl.style.top  = `${centerY}px`;
-
+  sideEl.style.left = `${cx}px`;
+  sideEl.style.top  = `${cy}px`;
   sideEl.style.setProperty('--angle', `${ANGLE_DEG}deg`);
   sideEl.style.setProperty('--logoHpx', `${logoH}px`);
   sideEl.style.setProperty('--logoWpx', `${logoH}px`);
@@ -114,10 +117,8 @@ function layoutBoth(stageEl){
   const L = W * LEFT_OFFSET_RATIO;
   const R = W * RIGHT_OFFSET_RATIO;
 
-  const leftX  = vsX - dx * L;
-  const leftY  = vsY - dy * L;
-  const rightX = vsX + dx * R;
-  const rightY = vsY + dy * R;
+  const leftX  = vsX - dx * L, leftY  = vsY - dy * L;
+  const rightX = vsX + dx * R, rightY = vsY + dy * R;
 
   layoutOblique(stageEl, document.getElementById('side1'), leftX,  leftY);
   layoutOblique(stageEl, document.getElementById('side2'), rightX, rightY);
@@ -135,12 +136,6 @@ const name1  = $('#name1');
 const name2  = $('#name2');
 const statusEl = $('#status');
 
-async function waitFonts(){
-  if (document.fonts && document.fonts.ready) {
-    try { await document.fonts.ready; } catch(_) {}
-  }
-}
-
 async function loadAndRender(){
   try{
     statusEl.textContent = ' (carico dallo sheet...)';
@@ -156,10 +151,11 @@ async function loadAndRender(){
 
     const squadra1 = (meta.get('squadra1') || 'Petriolese').trim();
     const squadra2 = (meta.get('squadra2') || 'Avversari').trim();
-   
+
     name1.textContent = squadra1;
     name2.textContent = squadra2;
-      await waitFonts(); 
+    await waitFonts(); // assicurati che Oswald sia pronto prima del layout
+
     // carica logo1 con fallback
     const src1 = resolveLogoSrc(squadra1, opp);
     const fb1  = `logos/${slugify(squadra1)}.webp`;
@@ -183,9 +179,9 @@ async function loadAndRender(){
   }catch(err){
     console.error(err);
     if (!bg.complete) await new Promise(r => { bg.onload = r; bg.onerror = r; });
-
     name1.textContent = 'Petriolese';
     name2.textContent = 'Avversari';
+    await waitFonts();
     logo1.src = 'logos/petriolese.webp';
     logo2.src = 'logos/moglianese.webp';
     layoutBoth(stage);
@@ -212,7 +208,7 @@ async function downloadPNG(){
   const cBg = clone.querySelector('#bg');
   if (!cBg.complete) await new Promise(r => { cBg.onload = r; cBg.onerror = r; });
 
-  // rilayout sul clone (usa gli stessi parametri/angolo)
+  // rilayout sul clone
   (function(){
     const W = clone.clientWidth, H = clone.clientHeight;
     const vsX = W * VS_X_RATIO, vsY = H * VS_Y_RATIO;
@@ -235,7 +231,8 @@ async function downloadPNG(){
     place('#side1', leftX, leftY);
     place('#side2', rightX, rightY);
   })();
-await waitFonts(); 
+
+  await waitFonts();
   const canvas = await html2canvas(clone, {
     backgroundColor: null,
     useCORS: true,
