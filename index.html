@@ -4,10 +4,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Petriolese – Cover Generator</title>
-  <!-- Google Fonts: Oswald -->
+
+<!-- Google Fonts: Oswald -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+
 <style>
   :root{
     --out-w: 3508px;  /* A3 @300dpi */
@@ -52,7 +54,6 @@
   .side{
     position:absolute;
     display:flex; flex-direction:column; align-items:center;
-    /* ancoriamo il centro del contenitore alla posizione calcolata */
     transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
     transform-origin: center center;
   }
@@ -63,17 +64,14 @@
     filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
   }
   .side .team-name{
-  position:absolute;
-  transform: translateX(-50%);
-  text-align:center;
-  text-transform: uppercase
-  font-family: "Oswald", system-ui, Arial, sans-serif; /* 👈 qui */
-  font-weight:700;                                     /* Oswald arriva a 700 */
-  letter-spacing:.3px;
-  color:#d4d6db;
-  text-shadow: 0 1px 2px rgba(0,0,0,.45);
-  white-space:nowrap;
-  font-size: var(--nameFontPx, 40px);
+    margin-top: var(--nameGapPx, 12px);
+    font-family: "Oswald", system-ui, Arial, sans-serif;
+    font-weight:700;
+    letter-spacing:.3px;
+    color:#d4d6db;
+    text-shadow: 0 1px 2px rgba(0,0,0,.45);
+    white-space:nowrap;
+    font-size: var(--nameFontPx, 40px);
   }
 
   .note{ font-size:14px; opacity:.85; }
