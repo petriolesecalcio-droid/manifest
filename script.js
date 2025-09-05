@@ -7,11 +7,21 @@ const OPP_GID       = '1284472120';  // linguetta "Avversari"
 const PUBLISHED_DOC_E_ID = '2PACX-1vSpJqXmoJaIznEo_EGHCfUxyYVWWKJCGULM9FbnI14hLhGpsjt3oMHT5ahJwEmJ4w';
 
 /* ===== Parametri geometrici ===== */
-const ANGLE_DEG          = -8;   // manopola
+const ANGLE_DEG          = -8;   // tua impostazione
 const VS_X_RATIO         = 0.50;
 const VS_Y_RATIO         = 0.57;
-const LEFT_OFFSET_RATIO  = 0.25; // manopola
-const RIGHT_OFFSET_RATIO = 0.22; // manopola
+const LEFT_OFFSET_RATIO  = 0.25; // tua impostazione (distanza lungo la retta obliqua)
+const RIGHT_OFFSET_RATIO = 0.25; // tua impostazione
+
+/* >>> NUOVO: spostamento verticale globale della “rete” obliqua (in % altezza) <<<
+   negativo = su, positivo = giù. Es: -0.02 sposta su di ~2% dell’altezza pagina */
+const RAIL_Y_SHIFT_RATIO = 0.00;
+
+/* >>> Opzionale: micro-offset verticale extra per un solo lato (in % altezza) <<< */
+const SIDE1_Y_EXTRA_RATIO = 0.00;  // sinistra
+const SIDE2_Y_EXTRA_RATIO = 0.00;  // destra
+
+/* Dimensioni contenuti */
 const LOGO_H_RATIO       = 0.12;
 const NAME_GAP_RATIO     = 0.018;
 const NAME_FONT_RATIO    = 0.038;
@@ -108,17 +118,29 @@ function layoutOblique(stageEl, sideEl, cx, cy){
   sideEl.style.setProperty('--nameFontPx', `${nameFont}px`);
 }
 
+/* Calcola le posizioni dei due blocchi, con shift verticale globale + extra per lato */
 function layoutBoth(stageEl){
   const W = stageEl.clientWidth, H = stageEl.clientHeight;
-  const vsX = W * VS_X_RATIO, vsY = H * VS_Y_RATIO;
+
+  // base: posizione VS, con shift verticale globale
+  const vsX = W * VS_X_RATIO;
+  const vsY = H * (VS_Y_RATIO + RAIL_Y_SHIFT_RATIO);
+
   const theta = ANGLE_DEG * Math.PI / 180;
   const dx = Math.cos(theta), dy = Math.sin(theta);
 
   const L = W * LEFT_OFFSET_RATIO;
   const R = W * RIGHT_OFFSET_RATIO;
 
-  const leftX  = vsX - dx * L, leftY  = vsY - dy * L;
-  const rightX = vsX + dx * R, rightY = vsY + dy * R;
+  // proiezione lungo la retta obliqua
+  let leftX  = vsX - dx * L;
+  let leftY  = vsY - dy * L;
+  let rightX = vsX + dx * R;
+  let rightY = vsY + dy * R;
+
+  // micro-offset verticali per lato (in pixel)
+  leftY  += H * SIDE1_Y_EXTRA_RATIO;
+  rightY += H * SIDE2_Y_EXTRA_RATIO;
 
   layoutOblique(stageEl, document.getElementById('side1'), leftX,  leftY);
   layoutOblique(stageEl, document.getElementById('side2'), rightX, rightY);
@@ -179,7 +201,7 @@ async function loadAndRender(){
   }catch(err){
     console.error(err);
     if (!bg.complete) await new Promise(r => { bg.onload = r; bg.onerror = r; });
-    name1.textContent = 'PetRIOLESE';
+    name1.textContent = 'PETRIOLESE';
     name2.textContent = 'AVVERSARI';
     await waitFonts();
     logo1.src = 'logos/petriolese.webp';
@@ -208,15 +230,19 @@ async function downloadPNG(){
   const cBg = clone.querySelector('#bg');
   if (!cBg.complete) await new Promise(r => { cBg.onload = r; cBg.onerror = r; });
 
-  // rilayout sul clone
+  // rilayout sul clone con gli stessi parametri e shift
   (function(){
     const W = clone.clientWidth, H = clone.clientHeight;
-    const vsX = W * VS_X_RATIO, vsY = H * VS_Y_RATIO;
+    const vsX = W * VS_X_RATIO;
+    const vsY = H * (VS_Y_RATIO + RAIL_Y_SHIFT_RATIO);
     const theta = ANGLE_DEG * Math.PI / 180, dx = Math.cos(theta), dy = Math.sin(theta);
     const L = W * LEFT_OFFSET_RATIO, R = W * RIGHT_OFFSET_RATIO;
 
-    const leftX  = vsX - dx * L, leftY  = vsY - dy * L;
-    const rightX = vsX + dx * R, rightY = vsY + dy * R;
+    let leftX  = vsX - dx * L, leftY  = vsY - dy * L;
+    let rightX = vsX + dx * R, rightY = vsY + dy * R;
+
+    leftY  += H * SIDE1_Y_EXTRA_RATIO;
+    rightY += H * SIDE2_Y_EXTRA_RATIO;
 
     const place = (sel,cx,cy)=>{
       const el = clone.querySelector(sel);
