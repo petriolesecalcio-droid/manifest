@@ -1,27 +1,28 @@
 /* ===== Config sheet ===== */
 const SHEET_FILE_ID = '1nWG0OBGpiyK-lulP-OKGad4jG7uEVmcy';
-const META_GID      = '254048258';
-const OPP_GID       = '1284472120';
+const META_GID      = '254048258';   // Meta
+const OPP_GID       = '1284472120';  // Avversari
 const PUBLISHED_DOC_E_ID = '2PACX-1vSpJqXmoJaIznEo_EGHCfUxyYVWWKJCGULM9FbnI14hLhGpsjt3oMHT5ahJwEmJ4w';
 
-/* ===== Parametri (default = tuoi slider + nuove voci) ===== */
+/* ===== Parametri (DEFAULT = slider del tuo screenshot) ===== */
 const K = {
-  /* Squadre (unificato) */
-  TEAM_ANGLE_DEG:    -9.5,
+  /* Squadre (controlli unificati) */
+  TEAM_ANGLE_DEG:    -7.5,
   VS_X_RATIO:         0.50,
   VS_Y_RATIO:         0.57,
-  TEAM_ALONG_RATIO:   0.00,   // <<< nuovo: sposta lungo la retta obliqua
-  TEAM_OFFSET_RATIO:  0.25,   // distanza VS (simmetrica)
-  TEAM_RAIL_Y_RATIO:  0.00,   // shift verticale globale
+  TEAM_ALONG_RATIO:  -0.015, // -1.5% W
+  TEAM_OFFSET_RATIO:  0.25,  // 25%
+  TEAM_RAIL_Y_RATIO:  0.018, // +1.8% H
   TEAM_SCALE:         1.00,
   TEAM_Y_EXTRA_RATIO: 0.00,
 
+  /* Dimensioni nomi/logo */
   LOGO_H_RATIO:       0.12,
   NAME_GAP_RATIO:     0.018,
   NAME_FONT_RATIO:    0.038,
 
   /* Info (angolo unico) */
-  INFO_ANGLE_DEG:    -9.5,
+  INFO_ANGLE_DEG:    -9,
   INFO_BASE_X_RATIO:  0.78,
   INFO_BASE_Y_RATIO:  0.24,
   INFO_ALONG_RATIO:   0.00,
@@ -34,16 +35,15 @@ const K = {
   INFO_FIELD_SCALE: 0.60,  INFO_FIELD_ALONG: -0.100, INFO_FIELD_Y:  0.050,
   INFO_PAESE_SCALE: 1.02,  INFO_PAESE_ALONG:  0.075, INFO_PAESE_Y:  0.078,
 
-  /* QR block */
-  QR_X_RATIO:        0.86,  // inizialmente in basso a destra
-  QR_Y_RATIO:        0.86,
+  /* QR block (senza freccia) */
+  QR_X_RATIO:        0.51,
+  QR_Y_RATIO:        0.80,
   QR_SCALE:          1.00,
-  QR_ARROW_ROT_DEG: -45,    // freccia che “punta” al QR
   QR_TEXT_SCALE:     1.00,
 };
 
-/* nuova chiave LS per applicare default */
-const LS_KEY = 'manifest_tuning_v5';
+/* nuova chiave LS per applicare SUBITO i default */
+const LS_KEY = 'manifest_tuning_v6';
 try { Object.assign(K, JSON.parse(localStorage.getItem(LS_KEY)||'{}')||{}); } catch {}
 
 /* ===== Helpers sheet ===== */
@@ -142,8 +142,9 @@ function layoutSide(stageEl, sideEl, cx, cy, scale=1){
 }
 function layoutTeams(stageEl){
   const W = stageEl.clientWidth, H = stageEl.clientHeight;
-  // ancora VS con shift verticale + lungo retta
   const th = K.TEAM_ANGLE_DEG * Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
+
+  // VS “ancora” spostata lungo la retta e verticalmente
   let vsX = W * K.VS_X_RATIO + dx * (W * K.TEAM_ALONG_RATIO);
   let vsY = H * (K.VS_Y_RATIO + K.TEAM_RAIL_Y_RATIO) + dy * (W * K.TEAM_ALONG_RATIO);
 
@@ -178,22 +179,16 @@ function layoutInfo(stageEl){
   placeInfoLine(stageEl, document.getElementById('infoPaese'), K.INFO_PAESE_ALONG, K.INFO_PAESE_Y, K.INFO_PAESE_SCALE);
 }
 
-/* ===== Layout QR ===== */
+/* ===== Layout QR (solo immagine + testo) ===== */
 function layoutQR(stageEl){
   const W = stageEl.clientWidth, H = stageEl.clientHeight;
   const qr = document.getElementById('qrBlock');
-  const qrImg = document.getElementById('qrImg');
-  const qrArrow = document.getElementById('qrArrow');
-  const qrLabel = document.getElementById('qrLabel');
-
-  const cx = W * K.QR_X_RATIO, cy = H * K.QR_Y_RATIO;
-  const size = Math.round(H * 0.08 * K.QR_SCALE); // dimensione base proporzionale all’altezza
+  const size = Math.round(H * 0.08 * K.QR_SCALE);
   const textPx = Math.round(H * 0.016 * K.QR_TEXT_SCALE);
-
-  qr.style.left = `${cx}px`; qr.style.top  = `${cy}px`;
+  qr.style.left = (W*K.QR_X_RATIO)+'px';
+  qr.style.top  = (H*K.QR_Y_RATIO)+'px';
   qr.style.setProperty('--qrSizePx', `${size}px`);
   qr.style.setProperty('--qrTextPx', `${textPx}px`);
-  qrArrow.style.transform = `translate(-60px, -80px) rotate(${K.QR_ARROW_ROT_DEG}deg)`;
 }
 
 /* ===== DOM ===== */
@@ -207,54 +202,56 @@ const statusEl=$('#status');
 /* ===== UI (manopole) ===== */
 function bindKnob(id, key, fmt=(v)=>v){
   const el = document.getElementById(id); if(!el) return;
-  const out = el.nextElementSibling; el.value = K[key]; if(out) out.textContent = fmt(K[key]);
+  const out = el.nextElementSibling;
+  el.value = K[key];
+  if(out) out.textContent = fmt(K[key]);
   el.addEventListener('input', ()=>{
-    const t = Number(el.value); K[key] = t;
+    const t = Number(el.value);
+    K[key] = t;
     localStorage.setItem(LS_KEY, JSON.stringify(K));
     if(out) out.textContent = fmt(t);
     layoutAll();
   });
 }
 function initKnobs(){
-  const fmtPct=v=>(v*100).toFixed(1)+'%';
-  const fmtPctW=v=>(v>0?'+':'')+(v*100).toFixed(1)+'% W';
-  const fmtPctH=v=>(v>0?'+':'')+(v*100).toFixed(1)+'% H';
+  const pct = v=>(v*100).toFixed(1)+'%';
+  const pctW=v=>(v>0?'+':'')+(v*100).toFixed(1)+'% W';
+  const pctH=v=>(v>0?'+':'')+(v*100).toFixed(1)+'% H';
 
   // Squadre
   bindKnob('k_team_angle','TEAM_ANGLE_DEG', v=>`${v}°`);
-  bindKnob('k_team_rail','TEAM_RAIL_Y_RATIO', v=> (v>0?'+':'')+fmtPct(v/1)); // solo segno
-  bindKnob('k_team_along','TEAM_ALONG_RATIO', fmtPctW);
-  bindKnob('k_team_dist','TEAM_OFFSET_RATIO', fmtPct);
+  bindKnob('k_team_rail','TEAM_RAIL_Y_RATIO', v=> (v>0?'+':'')+pct(v/1));
+  bindKnob('k_team_along','TEAM_ALONG_RATIO', pctW);
+  bindKnob('k_team_dist','TEAM_OFFSET_RATIO', pct);
   bindKnob('k_team_scale','TEAM_SCALE', v=>`${v.toFixed(2)}×`);
-  bindKnob('k_team_y','TEAM_Y_EXTRA_RATIO', fmtPctH);
+  bindKnob('k_team_y','TEAM_Y_EXTRA_RATIO', pctH);
 
   // Info (ancora + angolo unico)
   bindKnob('k_info_angle','INFO_ANGLE_DEG', v=>`${v}°`);
-  bindKnob('k_info_along','INFO_ALONG_RATIO', fmtPctW);
-  bindKnob('k_info_y','INFO_Y_EXTRA_RATIO', fmtPctH);
+  bindKnob('k_info_along','INFO_ALONG_RATIO', pctW);
+  bindKnob('k_info_y','INFO_Y_EXTRA_RATIO', pctH);
 
-  // per-riga
+  // Per-riga
   bindKnob('k_date_scale','INFO_DATE_SCALE', v=>`${v.toFixed(2)}×`);
-  bindKnob('k_date_along','INFO_DATE_ALONG', fmtPctW);
-  bindKnob('k_date_y','INFO_DATE_Y', fmtPctH);
+  bindKnob('k_date_along','INFO_DATE_ALONG', pctW);
+  bindKnob('k_date_y','INFO_DATE_Y', pctH);
 
   bindKnob('k_time_scale','INFO_TIME_SCALE', v=>`${v.toFixed(2)}×`);
-  bindKnob('k_time_along','INFO_TIME_ALONG', fmtPctW);
-  bindKnob('k_time_y','INFO_TIME_Y', fmtPctH);
+  bindKnob('k_time_along','INFO_TIME_ALONG', pctW);
+  bindKnob('k_time_y','INFO_TIME_Y', pctH);
 
   bindKnob('k_field_scale','INFO_FIELD_SCALE', v=>`${v.toFixed(2)}×`);
-  bindKnob('k_field_along','INFO_FIELD_ALONG', fmtPctW);
-  bindKnob('k_field_y','INFO_FIELD_Y', fmtPctH);
+  bindKnob('k_field_along','INFO_FIELD_ALONG', pctW);
+  bindKnob('k_field_y','INFO_FIELD_Y', pctH);
 
   bindKnob('k_paese_scale','INFO_PAESE_SCALE', v=>`${v.toFixed(2)}×`);
-  bindKnob('k_paese_along','INFO_PAESE_ALONG', fmtPctW);
-  bindKnob('k_paese_y','INFO_PAESE_Y', fmtPctH);
+  bindKnob('k_paese_along','INFO_PAESE_ALONG', pctW);
+  bindKnob('k_paese_y','INFO_PAESE_Y', pctH);
 
   // QR
-  bindKnob('k_qr_x','QR_X_RATIO', fmtPct);
-  bindKnob('k_qr_y','QR_Y_RATIO', fmtPct);
+  bindKnob('k_qr_x','QR_X_RATIO', pct);
+  bindKnob('k_qr_y','QR_Y_RATIO', pct);
   bindKnob('k_qr_scale','QR_SCALE', v=>`${v.toFixed(2)}×`);
-  bindKnob('k_qr_arrow','QR_ARROW_ROT_DEG', v=>`${v}°`);
   bindKnob('k_qr_text','QR_TEXT_SCALE', v=>`${v.toFixed(2)}×`);
 }
 
@@ -361,13 +358,11 @@ async function downloadPNG(){
 
     // QR
     const q = clone.querySelector('#qrBlock');
-    const qArrow = clone.querySelector('#qrArrow');
     const size = Math.round(H * 0.08 * K.QR_SCALE);
     const textPx = Math.round(H * 0.016 * K.QR_TEXT_SCALE);
     q.style.left = (W*K.QR_X_RATIO)+'px'; q.style.top = (H*K.QR_Y_RATIO)+'px';
     q.style.setProperty('--qrSizePx', `${size}px`);
     q.style.setProperty('--qrTextPx', `${textPx}px`);
-    qArrow.style.transform = `translate(-60px, -80px) rotate(${K.QR_ARROW_ROT_DEG}deg)`;
   })();
 
   await waitFonts();
