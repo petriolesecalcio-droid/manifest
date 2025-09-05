@@ -7,11 +7,11 @@ const OPP_GID       = '1284472120';  // linguetta "Avversari"
 const PUBLISHED_DOC_E_ID = '2PACX-1vSpJqXmoJaIznEo_EGHCfUxyYVWWKJCGULM9FbnI14hLhGpsjt3oMHT5ahJwEmJ4w';
 
 /* ===== Parametri geometrici ===== */
-const ANGLE_DEG          = -8;   // come da tua impostazione
+const ANGLE_DEG          = -8;   // manopola
 const VS_X_RATIO         = 0.50;
 const VS_Y_RATIO         = 0.57;
-const LEFT_OFFSET_RATIO  = 0.25; // come da tua impostazione
-const RIGHT_OFFSET_RATIO = 0.25; // come da tua impostazione
+const LEFT_OFFSET_RATIO  = 0.25; // manopola
+const RIGHT_OFFSET_RATIO = 0.22; // manopola
 const LOGO_H_RATIO       = 0.12;
 const NAME_GAP_RATIO     = 0.018;
 const NAME_FONT_RATIO    = 0.038;
