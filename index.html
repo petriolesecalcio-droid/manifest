@@ -37,16 +37,16 @@
     transform: translate(-50%, -50%) rotate(var(--angle,0deg)); transform-origin:center center;
   }
   .side .logo{ display:block; object-fit:contain; width:var(--logoWpx,200px); height:var(--logoHpx,200px); filter:drop-shadow(0 4px 14px rgba(0,0,0,.45)); }
-  .side .team-name{ display:inline-block; text-align:center; line-height:1.05; 
+  .side .team-name{
     margin-top:var(--nameGapPx,12px); font-family:"Oswald", Arial, sans-serif!important; font-weight:700; text-transform:uppercase;
-    color:#fff; white-space:normal; font-size:var(--nameFontPx,40px); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    color:#fff; white-space:nowrap; font-size:var(--nameFontPx,40px); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
   }
 
   /* Info (righe indipendenti) */
   .info-line{
     position:absolute; transform: translate(-50%, -50%) rotate(var(--angle,0deg)); transform-origin:center;
     font-family:"Oswald", Arial, sans-serif!important; font-weight:700; text-transform:uppercase;
-    color:#fff; white-space:normal; font-size:var(--fontPx,36px);
+    color:#fff; white-space:nowrap; font-size:var(--fontPx,36px);
   }
 
   /* QR block (senza freccia) */

@@ -196,12 +196,6 @@ const $ = s=>document.querySelector(s);
 const stage=$('#stage'), bg=$('#bg');
 const logo1=$('#logo1'), logo2=$('#logo2');
 const name1=$('#name1'), name2=$('#name2');
-
-function formatTeamName(name){
-  if(!name) return '';
-  return String(name).trim().split(/\s+/).join('<br>');
-}
-
 const infoDate=$('#infoDate'), infoTime=$('#infoTime'), infoField=$('#infoField'), infoPaese=$('#infoPaese');
 const statusEl=$('#status');
 
@@ -276,7 +270,7 @@ async function loadAndRender(){
 
     const squadra1 = (meta.get('squadra1') || 'Petriolese').trim();
     const squadra2 = (meta.get('squadra2') || 'Avversari').trim();
-    name1.innerHTML = formatTeamName(squadra1); name2.innerHTML = formatTeamName(squadra2);
+    name1.textContent = squadra1; name2.textContent = squadra2;
 
     await waitFonts();
 
