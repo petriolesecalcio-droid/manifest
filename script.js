@@ -214,7 +214,11 @@ function bindKnob(id, key, fmt=(v)=>v){
   el.addEventListener('input', ()=>{
     const t = Number(el.value);
     K[key] = t;
-    localStorage.setItem(LS_KEY, JSON.stringify(K));
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(K));
+    } catch (err) {
+      // Ignore storage errors (e.g. disabled storage)
+    }
     if(out) out.textContent = fmt(t);
     layoutAll();
   });
