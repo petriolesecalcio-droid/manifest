@@ -197,13 +197,33 @@ const stage=$('#stage'), bg=$('#bg');
 const logo1=$('#logo1'), logo2=$('#logo2');
 const name1=$('#name1'), name2=$('#name2');
 
+const HTML_ESCAPE_MAP = { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" };
+const HTML_ESCAPE_RE = /[&<>"']/g;
+const escapeHtml = value => String(value).replace(HTML_ESCAPE_RE, ch=>HTML_ESCAPE_MAP[ch]);
+
 function formatTeamName(name){
-  if(!name) return '';
-  return String(name).trim().split(/\s+/).join('<br>');
+  const trimmed = String(name ?? '').trim();
+  if(!trimmed) return '';
+  return trimmed.split(/\s+/).map(part=>escapeHtml(part)).join('<br>');
 }
 
 const infoDate=$('#infoDate'), infoTime=$('#infoTime'), infoField=$('#infoField'), infoPaese=$('#infoPaese');
 const statusEl=$('#status');
+
+function setStatusMessage(label, color, extraNodes=[]){
+  const nodes=[document.createTextNode(' ')];
+  const badge=document.createElement('span');
+  badge.style.color=color;
+  badge.textContent=label;
+  nodes.push(badge, ...extraNodes);
+  statusEl.replaceChildren(...nodes);
+}
+
+const createStrongText = text => {
+  const el=document.createElement('strong');
+  el.textContent=text;
+  return el;
+};
 
 /* ===== UI (manopole) ===== */
 function bindKnob(id, key, fmt=(v)=>v){
@@ -302,12 +322,19 @@ async function loadAndRender(){
     infoPaese.textContent = resolvePaese(squadra1, opp, '');
 
     layoutAll();
-    statusEl.innerHTML = ` <span style="color:#8ff59a">OK</span> — <strong>${squadra1}</strong> vs <strong>${squadra2}</strong>`;
+    setStatusMessage('OK', '#8ff59a', [
+      document.createTextNode(' — '),
+      createStrongText(squadra1),
+      document.createTextNode(' vs '),
+      createStrongText(squadra2),
+    ]);
   }catch(err){
     console.error(err);
     infoDate.textContent=''; infoTime.textContent=''; infoField.textContent=''; infoPaese.textContent='';
     layoutAll();
-    statusEl.innerHTML = ` <span style="color:#ffd36d">fallback</span> — controlla permessi o pubblicazione`;
+    setStatusMessage('fallback', '#ffd36d', [
+      document.createTextNode(' — controlla permessi o pubblicazione'),
+    ]);
   }
 }
 
