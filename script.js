@@ -128,21 +128,42 @@ function normalizeTime(s){
 async function waitFonts(){ if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch{} } }
 
 /* ===== Layout squadre ===== */
-function layoutSide(stageEl, sideEl, cx, cy, scale=1){
-  const H = stageEl.clientHeight;
+function computeStageMetrics(stageEl){
+  const W = stageEl?.clientWidth ?? 0;
+  const H = stageEl?.clientHeight ?? 0;
+  const teamAngleRad = K.TEAM_ANGLE_DEG * Math.PI / 180;
+  const infoAngleRad = K.INFO_ANGLE_DEG * Math.PI / 180;
+  return {
+    W,
+    H,
+    teamAngleRad,
+    teamAngleDeg: K.TEAM_ANGLE_DEG,
+    teamCos: Math.cos(teamAngleRad),
+    teamSin: Math.sin(teamAngleRad),
+    infoAngleRad,
+    infoAngleDeg: K.INFO_ANGLE_DEG,
+    infoCos: Math.cos(infoAngleRad),
+    infoSin: Math.sin(infoAngleRad),
+  };
+}
+
+function layoutSide(sideEl, metrics, cx, cy, scale=1){
+  if(!sideEl) return;
+  const { H, teamAngleDeg } = metrics;
   const logoH   = H * K.LOGO_H_RATIO * scale;
   const nameGap = H * K.NAME_GAP_RATIO;
   const nameFont= H * K.NAME_FONT_RATIO;
-  sideEl.style.left = `${cx}px`; sideEl.style.top  = `${cy}px`;
-  sideEl.style.setProperty('--angle', `${K.TEAM_ANGLE_DEG}deg`);
+  sideEl.style.left = `${cx}px`;
+  sideEl.style.top  = `${cy}px`;
+  sideEl.style.setProperty('--angle', `${teamAngleDeg}deg`);
   sideEl.style.setProperty('--logoHpx', `${logoH}px`);
   sideEl.style.setProperty('--logoWpx', `${logoH}px`);
   sideEl.style.setProperty('--nameGapPx', `${nameGap}px`);
   sideEl.style.setProperty('--nameFontPx', `${nameFont}px`);
 }
-function layoutTeams(stageEl){
-  const W = stageEl.clientWidth, H = stageEl.clientHeight;
-  const th = K.TEAM_ANGLE_DEG * Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
+
+function layoutTeams(metrics, scope){
+  const { W, H, teamCos:dx, teamSin:dy } = metrics;
 
   // VS “ancora” spostata lungo la retta e verticalmente
   let vsX = W * K.VS_X_RATIO + dx * (W * K.TEAM_ALONG_RATIO);
@@ -151,38 +172,42 @@ function layoutTeams(stageEl){
   const D = W * K.TEAM_OFFSET_RATIO;
   let lX=vsX-dx*D, lY=vsY-dy*D, rX=vsX+dx*D, rY=vsY+dy*D;
 
-  lY += H*K.TEAM_Y_EXTRA_RATIO;
-  rY += H*K.TEAM_Y_EXTRA_RATIO;
+  const yExtra = H * K.TEAM_Y_EXTRA_RATIO;
+  lY += yExtra;
+  rY += yExtra;
 
-  layoutSide(stageEl, document.getElementById('side1'), lX, lY, K.TEAM_SCALE);
-  layoutSide(stageEl, document.getElementById('side2'), rX, rY, K.TEAM_SCALE);
+  layoutSide(scope?.querySelector?.('#side1'), metrics, lX, lY, K.TEAM_SCALE);
+  layoutSide(scope?.querySelector?.('#side2'), metrics, rX, rY, K.TEAM_SCALE);
 }
 
 /* ===== Layout info (4 righe) ===== */
-function placeInfoLine(stageEl, el, alongRatio, yRatio, scale){
-  const W = stageEl.clientWidth, H = stageEl.clientHeight;
+function placeInfoLine(metrics, el, alongRatio, yRatio, scale){
+  if(!el) return;
+  const { W, H, infoAngleDeg, infoCos:dx, infoSin:dy } = metrics;
   const baseX=W*K.INFO_BASE_X_RATIO, baseY=H*K.INFO_BASE_Y_RATIO;
-  const th=K.INFO_ANGLE_DEG*Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
-  const nx=-Math.sin(th), ny=Math.cos(th);
+  const nx=-dy, ny=dx;
   const alongG=W*K.INFO_ALONG_RATIO, yG=H*K.INFO_Y_EXTRA_RATIO;
   const cx = baseX + dx*(alongG + W*alongRatio) + nx*(yG + H*yRatio);
   const cy = baseY + dy*(alongG + W*alongRatio) + ny*(yG + H*yRatio);
   const fontPx = H * K.INFO_FONT_RATIO * scale;
-  el.style.left = `${cx}px`; el.style.top = `${cy}px`;
-  el.style.setProperty('--angle', `${K.INFO_ANGLE_DEG}deg`);
+  el.style.left = `${cx}px`;
+  el.style.top = `${cy}px`;
+  el.style.setProperty('--angle', `${infoAngleDeg}deg`);
   el.style.setProperty('--fontPx', `${fontPx}px`);
 }
-function layoutInfo(stageEl){
-  placeInfoLine(stageEl, document.getElementById('infoDate'),  K.INFO_DATE_ALONG,  K.INFO_DATE_Y,  K.INFO_DATE_SCALE);
-  placeInfoLine(stageEl, document.getElementById('infoTime'),  K.INFO_TIME_ALONG,  K.INFO_TIME_Y,  K.INFO_TIME_SCALE);
-  placeInfoLine(stageEl, document.getElementById('infoField'), K.INFO_FIELD_ALONG, K.INFO_FIELD_Y, K.INFO_FIELD_SCALE);
-  placeInfoLine(stageEl, document.getElementById('infoPaese'), K.INFO_PAESE_ALONG, K.INFO_PAESE_Y, K.INFO_PAESE_SCALE);
+
+function layoutInfo(metrics, scope){
+  placeInfoLine(metrics, scope?.querySelector?.('#infoDate'),  K.INFO_DATE_ALONG,  K.INFO_DATE_Y,  K.INFO_DATE_SCALE);
+  placeInfoLine(metrics, scope?.querySelector?.('#infoTime'),  K.INFO_TIME_ALONG,  K.INFO_TIME_Y,  K.INFO_TIME_SCALE);
+  placeInfoLine(metrics, scope?.querySelector?.('#infoField'), K.INFO_FIELD_ALONG, K.INFO_FIELD_Y, K.INFO_FIELD_SCALE);
+  placeInfoLine(metrics, scope?.querySelector?.('#infoPaese'), K.INFO_PAESE_ALONG, K.INFO_PAESE_Y, K.INFO_PAESE_SCALE);
 }
 
 /* ===== Layout QR (solo immagine + testo) ===== */
-function layoutQR(stageEl){
-  const W = stageEl.clientWidth, H = stageEl.clientHeight;
-  const qr = document.getElementById('qrBlock');
+function layoutQR(metrics, scope){
+  const { W, H } = metrics;
+  const qr = scope?.querySelector?.('#qrBlock');
+  if(!qr) return;
   const size = Math.round(H * 0.08 * K.QR_SCALE);
   const textPx = Math.round(H * 0.016 * K.QR_TEXT_SCALE);
   qr.style.left = (W*K.QR_X_RATIO)+'px';
@@ -338,7 +363,14 @@ async function loadAndRender(){
   }
 }
 
-function layoutAll(){ layoutTeams(stage); layoutInfo(stage); layoutQR(stage); }
+function layoutAll(stageEl=stage, scope=stageEl){
+  if(!stageEl) return;
+  const metrics = computeStageMetrics(stageEl);
+  const targetScope = scope || stageEl;
+  layoutTeams(metrics, targetScope);
+  layoutInfo(metrics, targetScope);
+  layoutQR(metrics, targetScope);
+}
 
 /* ===== Export PNG ===== */
 async function downloadPNG(){
@@ -351,56 +383,7 @@ async function downloadPNG(){
   const cBg = clone.querySelector('#bg');
   if (!cBg.complete) await new Promise(r=>{ cBg.onload=r; cBg.onerror=r; });
 
-  (function applyClone(){
-    const W=clone.clientWidth, H=clone.clientHeight;
-
-    // squadre
-    const th=K.TEAM_ANGLE_DEG*Math.PI/180, dx=Math.cos(th), dy=Math.sin(th);
-    let vsX = W*K.VS_X_RATIO + dx*(W*K.TEAM_ALONG_RATIO);
-    let vsY = H*(K.VS_Y_RATIO + K.TEAM_RAIL_Y_RATIO) + dy*(W*K.TEAM_ALONG_RATIO);
-    const D=W*K.TEAM_OFFSET_RATIO;
-    let lX=vsX-dx*D, lY=vsY-dy*D, rX=vsX+dx*D, rY=vsY+dy*D;
-    lY+=H*K.TEAM_Y_EXTRA_RATIO; rY+=H*K.TEAM_Y_EXTRA_RATIO;
-
-    const placeSide=(sel,cx,cy)=>{
-      const el=clone.querySelector(sel);
-      const logoH=H*K.LOGO_H_RATIO*K.TEAM_SCALE, nameGap=H*K.NAME_GAP_RATIO, nameFont=H*K.NAME_FONT_RATIO;
-      el.style.left=`${cx}px`; el.style.top=`${cy}px`;
-      el.style.setProperty('--angle', `${K.TEAM_ANGLE_DEG}deg`);
-      el.style.setProperty('--logoHpx', `${logoH}px`);
-      el.style.setProperty('--logoWpx', `${logoH}px`);
-      el.style.setProperty('--nameGapPx', `${nameGap}px`);
-      el.style.setProperty('--nameFontPx', `${nameFont}px`);
-    };
-    placeSide('#side1', lX, lY); placeSide('#side2', rX, rY);
-
-    // info
-    const baseX=W*K.INFO_BASE_X_RATIO, baseY=H*K.INFO_BASE_Y_RATIO;
-    const thI=K.INFO_ANGLE_DEG*Math.PI/180, dxI=Math.cos(thI), dyI=Math.sin(thI);
-    const nx=-Math.sin(thI), ny=Math.cos(thI);
-    const alongG=W*K.INFO_ALONG_RATIO, yG=H*K.INFO_Y_EXTRA_RATIO;
-    const placeLine=(sel,along,y,scale)=>{
-      const el=clone.querySelector(sel);
-      const cx = baseX + dxI*(alongG + W*along) + nx*(yG + H*y);
-      const cy = baseY + dyI*(alongG + W*along) + ny*(yG + H*y);
-      const fontPx = H*K.INFO_FONT_RATIO*scale;
-      el.style.left=`${cx}px`; el.style.top=`${cy}px`;
-      el.style.setProperty('--angle', `${K.INFO_ANGLE_DEG}deg`);
-      el.style.setProperty('--fontPx', `${fontPx}px`);
-    };
-    placeLine('#infoDate',  K.INFO_DATE_ALONG,  K.INFO_DATE_Y,  K.INFO_DATE_SCALE);
-    placeLine('#infoTime',  K.INFO_TIME_ALONG,  K.INFO_TIME_Y,  K.INFO_TIME_SCALE);
-    placeLine('#infoField', K.INFO_FIELD_ALONG, K.INFO_FIELD_Y, K.INFO_FIELD_SCALE);
-    placeLine('#infoPaese', K.INFO_PAESE_ALONG, K.INFO_PAESE_Y, K.INFO_PAESE_SCALE);
-
-    // QR
-    const q = clone.querySelector('#qrBlock');
-    const size = Math.round(H * 0.08 * K.QR_SCALE);
-    const textPx = Math.round(H * 0.016 * K.QR_TEXT_SCALE);
-    q.style.left = (W*K.QR_X_RATIO)+'px'; q.style.top = (H*K.QR_Y_RATIO)+'px';
-    q.style.setProperty('--qrSizePx', `${size}px`);
-    q.style.setProperty('--qrTextPx', `${textPx}px`);
-  })();
+  layoutAll(clone, clone);
 
   await waitFonts();
   const canvas = await html2canvas(clone, { backgroundColor:null, useCORS:true, scale:1, width:TARGET_W, height:TARGET_H });
