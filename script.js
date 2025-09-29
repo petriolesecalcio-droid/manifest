@@ -229,9 +229,33 @@ function layoutSponsors(metrics, scope){
   if(!strip) return;
   const { H } = metrics;
   const desiredHeight = H * K.SPONSOR_HEIGHT_RATIO;
-  const qrHeight = H * 0.08 * K.QR_SCALE;
-  const qrBottom = H * K.QR_Y_RATIO + qrHeight / 2;
-  const clearance = H * 0.012; // ~1.2% margine per evitare sovrapposizione
+
+  let qrBottom = H;
+  let clearance = H * 0.02; // margine base (~2% dell'altezza)
+  const qrBlock = scope?.querySelector?.('#qrBlock');
+  if(qrBlock){
+    const qrSize = H * 0.08 * K.QR_SCALE;
+    let gapPx = 8;
+    let labelHeight = H * 0.016 * K.QR_TEXT_SCALE;
+    try{
+      const blockStyle = getComputedStyle(qrBlock);
+      const rowGap = parseFloat(blockStyle.rowGap);
+      if(!Number.isNaN(rowGap)) gapPx = rowGap;
+      const labelEl = qrBlock.querySelector('#qrLabel');
+      if(labelEl){
+        const labelStyle = getComputedStyle(labelEl);
+        const lineHeight = parseFloat(labelStyle.lineHeight);
+        if(!Number.isNaN(lineHeight)) labelHeight = lineHeight;
+      }
+    }catch{}
+    const blockHeight = qrSize + labelHeight + gapPx;
+    qrBottom = H * K.QR_Y_RATIO + blockHeight / 2;
+    clearance = Math.max(clearance, gapPx * 1.5);
+  }else{
+    const qrHeight = H * 0.08 * K.QR_SCALE;
+    qrBottom = H * K.QR_Y_RATIO + qrHeight / 2;
+  }
+
   const maxHeight = Math.max(0, H - (qrBottom + clearance));
   const height = Math.min(desiredHeight, maxHeight);
   const padding = Math.min(H * K.SPONSOR_PADDING_RATIO, height / 2);
