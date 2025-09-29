@@ -33,10 +33,17 @@
 
   .sponsor-strip{
     position:absolute; left:0; right:0; bottom:0;
+  codex/add-sponsor-strip-and-render-function-8wjgv6
     display:grid; grid-template-columns:repeat(auto-fit, minmax(0, 1fr));
     gap:var(--sponsorGapPx,16px); padding:var(--sponsorPaddingPx,20px);
     align-items:center; justify-items:center;
     background:#fff;
+    display:grid; grid-template-columns:repeat(6, minmax(0, 1fr));
+    gap:var(--sponsorGapPx,16px); padding:var(--sponsorPaddingPx,20px);
+    align-items:center; justify-items:center;
+    background:linear-gradient(180deg, rgba(11,12,17,0) 0%, rgba(11,12,17,0.88) 28%, rgba(11,12,17,0.95) 100%);
+    backdrop-filter:blur(4px);
+ main
   }
   .sponsor-strip:empty{ display:none; }
   .sponsor-strip .sponsor-logo{
