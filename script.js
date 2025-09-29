@@ -42,7 +42,7 @@ const K = {
   QR_TEXT_SCALE:     1.00,
 
   /* Strip sponsor */
-  SPONSOR_LOGO_RATIO:    0.050,
+  SPONSOR_HEIGHT_RATIO:   0.165,
   SPONSOR_PADDING_RATIO: 0.020,
   SPONSOR_GAP_RATIO:     0.010,
 };
@@ -50,6 +50,9 @@ const K = {
 /* nuova chiave LS per applicare SUBITO i default */
 const LS_KEY = 'manifest_tuning_v6';
 try { Object.assign(K, JSON.parse(localStorage.getItem(LS_KEY)||'{}')||{}); } catch {}
+if(typeof K.SPONSOR_HEIGHT_RATIO !== 'number' && typeof K.SPONSOR_LOGO_RATIO === 'number'){
+  K.SPONSOR_HEIGHT_RATIO = K.SPONSOR_LOGO_RATIO;
+}
 
 /* ===== Helpers sheet ===== */
 const gvizCsvURL=(fileId,gid)=>`https://docs.google.com/spreadsheets/d/${fileId}/gviz/tq?gid=${encodeURIComponent(gid)}&headers=1&tqx=out:csv`;
@@ -225,9 +228,12 @@ function layoutSponsors(metrics, scope){
   const strip = scope?.querySelector?.('#sponsorStrip');
   if(!strip) return;
   const { H } = metrics;
-  strip.style.setProperty('--sponsorPaddingPx', `${H * K.SPONSOR_PADDING_RATIO}px`);
+  const height = H * K.SPONSOR_HEIGHT_RATIO;
+  const padding = H * K.SPONSOR_PADDING_RATIO;
+  strip.style.setProperty('--sponsorHeightPx', `${height}px`);
+  strip.style.setProperty('--sponsorPaddingPx', `${padding}px`);
   strip.style.setProperty('--sponsorGapPx', `${H * K.SPONSOR_GAP_RATIO}px`);
-  strip.style.setProperty('--sponsorLogoMaxPx', `${H * K.SPONSOR_LOGO_RATIO}px`);
+  strip.style.setProperty('--sponsorLogoMaxPx', `${Math.max(0, height - padding * 2)}px`);
 }
 
 /* ===== DOM ===== */
@@ -352,7 +358,7 @@ function initKnobs(){
   bindKnob('k_qr_text','QR_TEXT_SCALE', v=>`${v.toFixed(2)}×`);
 
   // Sponsor strip
-  bindKnob('k_sponsor_scale','SPONSOR_LOGO_RATIO', pctH);
+  bindKnob('k_sponsor_scale','SPONSOR_HEIGHT_RATIO', pctH);
   bindKnob('k_sponsor_pad','SPONSOR_PADDING_RATIO', pctH);
 }
 
