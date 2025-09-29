@@ -31,6 +31,19 @@
   }
   #bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
 
+  .sponsor-strip{
+    position:absolute; left:0; right:0; bottom:0;
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(0, 1fr));
+    gap:var(--sponsorGapPx,16px); padding:var(--sponsorPaddingPx,20px);
+    align-items:center; justify-items:center;
+    background:#fff;
+  }
+  .sponsor-strip:empty{ display:none; }
+  .sponsor-strip .sponsor-logo{
+    width:100%; height:auto; max-height:var(--sponsorLogoMaxPx,80px);
+    object-fit:contain; filter:drop-shadow(0 4px 12px rgba(0,0,0,.45));
+  }
+
   /* Squadre (loghi+nomi) */
   .side{
     position:absolute; display:flex; flex-direction:column; align-items:center;
@@ -113,6 +126,10 @@
           <div class="lbl">QR – Y</div>                <input id="k_qr_y"        type="range" min="0.00" max="1.00" step="0.005"><span class="val"></span>
           <div class="lbl">QR – scala</div>            <input id="k_qr_scale"    type="range" min="0.5" max="2.0" step="0.02"><span class="val"></span>
           <div class="lbl">SCAN ME – scala</div>       <input id="k_qr_text"     type="range" min="0.6" max="2.0" step="0.02"><span class="val"></span>
+
+          <div class="group"><strong>Strip sponsor</strong></div>
+          <div class="lbl">Altezza loghi</div>         <input id="k_sponsor_scale" type="range" min="0.02" max="0.12" step="0.002"><span class="val"></span>
+          <div class="lbl">Padding strip</div>        <input id="k_sponsor_pad"   type="range" min="0.00" max="0.08" step="0.002"><span class="val"></span>
         </div>
       </details>
 
@@ -146,10 +163,12 @@
         <img id="qrImg" src="qr-code.png" alt="QR code" />
         <div id="qrLabel">SCAN&nbsp;ME</div>
       </div>
+
+      <div id="sponsorStrip" class="sponsor-strip" aria-label="Loghi sponsor"></div>
     </div>
   </main>
 
-  <footer><div class="note">Dati da Google Sheet (Meta + Avversari). “Campo” e “Paese” letti da Avversari per la squadra1.</div></footer>
+  <footer><div class="note">Dati da Google Sheet (Meta + Avversari). “Campo” e “Paese” letti da Avversari per la squadra1. In Meta, “sponsor_logos” elenca sei URL o file in <code>logos/</code>.</div></footer>
 
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
   <script src="script.js" defer></script>
