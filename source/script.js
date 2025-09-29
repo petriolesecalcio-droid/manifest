@@ -40,6 +40,11 @@ const K = {
   QR_Y_RATIO:        0.80,
   QR_SCALE:          1.00,
   QR_TEXT_SCALE:     1.00,
+
+  /* Strip sponsor */
+  SPONSOR_LOGO_RATIO:    0.050,
+  SPONSOR_PADDING_RATIO: 0.020,
+  SPONSOR_GAP_RATIO:     0.010,
 };
 
 /* nuova chiave LS per applicare SUBITO i default */
@@ -216,11 +221,21 @@ function layoutQR(metrics, scope){
   qr.style.setProperty('--qrTextPx', `${textPx}px`);
 }
 
+function layoutSponsors(metrics, scope){
+  const strip = scope?.querySelector?.('#sponsorStrip');
+  if(!strip) return;
+  const { H } = metrics;
+  strip.style.setProperty('--sponsorPaddingPx', `${H * K.SPONSOR_PADDING_RATIO}px`);
+  strip.style.setProperty('--sponsorGapPx', `${H * K.SPONSOR_GAP_RATIO}px`);
+  strip.style.setProperty('--sponsorLogoMaxPx', `${H * K.SPONSOR_LOGO_RATIO}px`);
+}
+
 /* ===== DOM ===== */
 const $ = s=>document.querySelector(s);
 const stage=$('#stage'), bg=$('#bg');
 const logo1=$('#logo1'), logo2=$('#logo2');
 const name1=$('#name1'), name2=$('#name2');
+const sponsorStrip=$('#sponsorStrip');
 
 const HTML_ESCAPE_MAP = { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" };
 const HTML_ESCAPE_RE = /[&<>"']/g;
@@ -234,6 +249,33 @@ function formatTeamName(name){
 
 const infoDate=$('#infoDate'), infoTime=$('#infoTime'), infoField=$('#infoField'), infoPaese=$('#infoPaese');
 const statusEl=$('#status');
+
+function renderSponsors(meta){
+  if(!sponsorStrip) return;
+  sponsorStrip.replaceChildren();
+  const raw = meta?.get?.('sponsor_logos') || '';
+  const parts = String(raw).split(/[\n;]+/);
+  const logos = [];
+  for(const part of parts){
+    const trimmed = part.trim();
+    if(!trimmed) continue;
+    const normalized = normalizeLogoUrl(trimmed);
+    if(!normalized) continue;
+    logos.push(normalized);
+  }
+
+  logos.forEach((src, idx)=>{
+    const img=document.createElement('img');
+    img.className='sponsor-logo';
+    img.src=src;
+    img.alt=`Logo sponsor ${idx+1}`;
+    img.decoding='async';
+    img.loading='lazy';
+    sponsorStrip.appendChild(img);
+  });
+
+  sponsorStrip.hidden = logos.length === 0;
+}
 
 function setStatusMessage(label, color, extraNodes=[]){
   const nodes=[document.createTextNode(' ')];
@@ -308,6 +350,10 @@ function initKnobs(){
   bindKnob('k_qr_y','QR_Y_RATIO', pct);
   bindKnob('k_qr_scale','QR_SCALE', v=>`${v.toFixed(2)}×`);
   bindKnob('k_qr_text','QR_TEXT_SCALE', v=>`${v.toFixed(2)}×`);
+
+  // Sponsor strip
+  bindKnob('k_sponsor_scale','SPONSOR_LOGO_RATIO', pctH);
+  bindKnob('k_sponsor_pad','SPONSOR_PADDING_RATIO', pctH);
 }
 
 /* ===== Load + Render ===== */
@@ -345,6 +391,7 @@ async function loadAndRender(){
     infoTime.textContent = oraNorm ? `ORE ${oraNorm}` : '';
     infoField.textContent = resolveCampo(squadra1, opp, '');
     infoPaese.textContent = resolvePaese(squadra1, opp, '');
+    renderSponsors(meta);
 
     layoutAll();
     setStatusMessage('OK', '#8ff59a', [
@@ -356,6 +403,7 @@ async function loadAndRender(){
   }catch(err){
     console.error(err);
     infoDate.textContent=''; infoTime.textContent=''; infoField.textContent=''; infoPaese.textContent='';
+    renderSponsors(new Map());
     layoutAll();
     setStatusMessage('fallback', '#ffd36d', [
       document.createTextNode(' — controlla permessi o pubblicazione'),
@@ -370,6 +418,7 @@ function layoutAll(stageEl=stage, scope=stageEl){
   layoutTeams(metrics, targetScope);
   layoutInfo(metrics, targetScope);
   layoutQR(metrics, targetScope);
+  layoutSponsors(metrics, targetScope);
 }
 
 /* ===== Export PNG ===== */
