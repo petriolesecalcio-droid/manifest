@@ -228,8 +228,13 @@ function layoutSponsors(metrics, scope){
   const strip = scope?.querySelector?.('#sponsorStrip');
   if(!strip) return;
   const { H } = metrics;
-  const height = H * K.SPONSOR_HEIGHT_RATIO;
-  const padding = H * K.SPONSOR_PADDING_RATIO;
+  const desiredHeight = H * K.SPONSOR_HEIGHT_RATIO;
+  const qrHeight = H * 0.08 * K.QR_SCALE;
+  const qrBottom = H * K.QR_Y_RATIO + qrHeight / 2;
+  const clearance = H * 0.012; // ~1.2% margine per evitare sovrapposizione
+  const maxHeight = Math.max(0, H - (qrBottom + clearance));
+  const height = Math.min(desiredHeight, maxHeight);
+  const padding = Math.min(H * K.SPONSOR_PADDING_RATIO, height / 2);
   strip.style.setProperty('--sponsorHeightPx', `${height}px`);
   strip.style.setProperty('--sponsorPaddingPx', `${padding}px`);
   strip.style.setProperty('--sponsorGapPx', `${H * K.SPONSOR_GAP_RATIO}px`);
