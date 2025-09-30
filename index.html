@@ -51,8 +51,7 @@
   /* Squadre (loghi+nomi) */
   .side{
     position:absolute; display:flex; flex-direction:column; align-items:center;
-    transform: translate(-50%, calc(-50% + var(--teamCenterAdjustPx, 0px))) rotate(var(--angle,0deg));
-    transform-origin:center center;
+    transform: translate(-50%, -50%) rotate(var(--angle,0deg)); transform-origin:center center;
   }
   .side .logo{ display:block; object-fit:contain; width:var(--logoWpx,200px); height:var(--logoHpx,200px); filter:drop-shadow(0 4px 14px rgba(0,0,0,.45)); }
   .side .team-name{ display:inline-block; text-align:center; line-height:1.05; 
