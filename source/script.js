@@ -45,6 +45,7 @@ const K = {
   SPONSOR_HEIGHT_RATIO:   0.165,
   SPONSOR_PADDING_RATIO: 0.020,
   SPONSOR_GAP_RATIO:     0.010,
+  SPONSOR_ROWS:          1,
 };
 
 /* nuova chiave LS per applicare SUBITO i default */
@@ -53,6 +54,13 @@ try { Object.assign(K, JSON.parse(localStorage.getItem(LS_KEY)||'{}')||{}); } ca
 if(typeof K.SPONSOR_HEIGHT_RATIO !== 'number' && typeof K.SPONSOR_LOGO_RATIO === 'number'){
   K.SPONSOR_HEIGHT_RATIO = K.SPONSOR_LOGO_RATIO;
 }
+if(typeof K.SPONSOR_ROWS !== 'number' || !Number.isFinite(K.SPONSOR_ROWS) || K.SPONSOR_ROWS <= 0){
+  K.SPONSOR_ROWS = 1;
+}
+
+const SPONSOR_MANIFEST_URL = 'logos/sponsor/manifest.json';
+const SPONSOR_KNOB_STORAGE_KEY = 'manifest_sponsor_knobs_v1';
+const DEFAULT_SPONSOR_REPEAT_MAX = 4;
 
 /* ===== Helpers sheet ===== */
 const gvizCsvURL=(fileId,gid)=>`https://docs.google.com/spreadsheets/d/${fileId}/gviz/tq?gid=${encodeURIComponent(gid)}&headers=1&tqx=out:csv`;
@@ -228,12 +236,45 @@ function layoutSponsors(metrics, scope){
   const strip = scope?.querySelector?.('#sponsorStrip');
   if(!strip) return;
   const { H } = metrics;
-  const height = H * K.SPONSOR_HEIGHT_RATIO;
-  const padding = H * K.SPONSOR_PADDING_RATIO;
+  const desiredHeight = H * K.SPONSOR_HEIGHT_RATIO;
+  const rows = Math.max(1, Math.round(K.SPONSOR_ROWS));
+  const logosCount = strip.querySelectorAll('.sponsor-logo').length;
+  const cols = Math.max(1, logosCount ? Math.ceil(logosCount / rows) : 1);
+
+  let qrBottom = H;
+  let clearance = H * 0.02; // margine base (~2% dell'altezza)
+  const qrBlock = scope?.querySelector?.('#qrBlock');
+  if(qrBlock){
+    const qrSize = H * 0.08 * K.QR_SCALE;
+    let gapPx = 8;
+    let labelHeight = H * 0.016 * K.QR_TEXT_SCALE;
+    try{
+      const blockStyle = getComputedStyle(qrBlock);
+      const rowGap = parseFloat(blockStyle.rowGap);
+      if(!Number.isNaN(rowGap)) gapPx = rowGap;
+      const labelEl = qrBlock.querySelector('#qrLabel');
+      if(labelEl){
+        const labelStyle = getComputedStyle(labelEl);
+        const lineHeight = parseFloat(labelStyle.lineHeight);
+        if(!Number.isNaN(lineHeight)) labelHeight = lineHeight;
+      }
+    }catch{}
+    const blockHeight = qrSize + labelHeight + gapPx;
+    qrBottom = H * K.QR_Y_RATIO + blockHeight / 2;
+    clearance = Math.max(clearance, gapPx * 1.5);
+  }else{
+    const qrHeight = H * 0.08 * K.QR_SCALE;
+    qrBottom = H * K.QR_Y_RATIO + qrHeight / 2;
+  }
+
+  const maxHeight = Math.max(0, H - (qrBottom + clearance));
+  const height = Math.min(desiredHeight, maxHeight);
+  const padding = Math.min(H * K.SPONSOR_PADDING_RATIO, height / 2);
   strip.style.setProperty('--sponsorHeightPx', `${height}px`);
   strip.style.setProperty('--sponsorPaddingPx', `${padding}px`);
   strip.style.setProperty('--sponsorGapPx', `${H * K.SPONSOR_GAP_RATIO}px`);
   strip.style.setProperty('--sponsorLogoMaxPx', `${Math.max(0, height - padding * 2)}px`);
+  strip.style.setProperty('--sponsorCols', `${cols}`);
 }
 
 /* ===== DOM ===== */
@@ -242,6 +283,253 @@ const stage=$('#stage'), bg=$('#bg');
 const logo1=$('#logo1'), logo2=$('#logo2');
 const name1=$('#name1'), name2=$('#name2');
 const sponsorStrip=$('#sponsorStrip');
+const knobGrid=document.getElementById('knobGrid');
+const sponsorKnobsHeader=document.getElementById('sponsorKnobsHeader');
+
+let sponsorManifest=[];
+const sponsorManifestMap=new Map();
+let sponsorKnobState={};
+let sponsorKnobsDirty=false;
+let pendingSponsorSeed=null;
+let lastLoadedMeta=new Map();
+
+const normalizeSponsorKey=value=>{
+  let key=String(value??'').trim();
+  if(!key) return '';
+  key=key.replace(/\\/g,'/');
+  key=key.replace(/^\.?\//,'');
+  key=key.replace(/^logos\//i,'');
+  key=key.replace(/^sponsor\//i,'');
+  key=key.replace(/^logos\/sponsor\//i,'');
+  key=key.replace(/^sponsor\//i,'');
+  return key.toLowerCase();
+};
+
+const prettifySponsorLabel=file=>{
+  const base=String(file||'').replace(/\\/g,'/').replace(/^.*\//,'').replace(/\.[^.]+$/,'');
+  const spaced=base.replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+  if(!spaced) return base || '';
+  return spaced.replace(/\b\w/g,ch=>ch.toUpperCase());
+};
+
+const normalizeSponsorManifest=data=>{
+  let basePath='logos/sponsor/';
+  let items=data;
+  if(data && typeof data==='object' && !Array.isArray(data)){
+    if(typeof data.basePath==='string') basePath=data.basePath;
+    items=data.items;
+  }
+  if(typeof basePath!=='string' || !basePath) basePath='logos/sponsor/';
+  basePath=basePath.replace(/\\/g,'/');
+  if(!basePath.endsWith('/')) basePath+='/';
+  if(!Array.isArray(items)) return [];
+  const out=[];
+  const seen=new Set();
+  for(const raw of items){
+    let file='';
+    let label='';
+    let explicitSrc='';
+    if(typeof raw==='string'){
+      file=raw;
+    }else if(raw && typeof raw==='object'){
+      file=raw.file || raw.path || raw.name || raw.src || raw.url || '';
+      label=raw.label || raw.title || '';
+      explicitSrc=raw.src || raw.url || '';
+    }
+    file=String(file||'').trim();
+    explicitSrc=String(explicitSrc||'').trim();
+    if(!file && explicitSrc) file=explicitSrc;
+    if(!file) continue;
+    let normalizedFile=String(file).replace(/\\/g,'/').replace(/^\.?\//,'');
+    normalizedFile=normalizedFile.replace(/^logos\/sponsor\//i,'');
+    const id=normalizeSponsorKey(normalizedFile);
+    if(!id || seen.has(id)) continue;
+    seen.add(id);
+    let src=explicitSrc || normalizedFile;
+    if(!/^https?:/i.test(src) && !src.startsWith('data:')){
+      if(!src.startsWith('logos/') && !src.startsWith('./') && !src.startsWith('../')){
+        src=basePath+normalizedFile;
+      }
+    }
+    const friendly=label ? String(label).trim() : prettifySponsorLabel(normalizedFile);
+    out.push({ id, file: normalizedFile, src, label: friendly, inputEl:null, valueEl:null });
+  }
+  return out;
+};
+
+async function fetchSponsorManifest(){
+  try{
+    const res=await fetch(SPONSOR_MANIFEST_URL,{cache:'no-store'});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    return normalizeSponsorManifest(data);
+  }catch(err){
+    console.error('Sponsor manifest fetch failed', err);
+    return [];
+  }
+}
+
+function loadSponsorKnobState(){
+  try{
+    const raw=localStorage.getItem(SPONSOR_KNOB_STORAGE_KEY);
+    if(!raw) return {};
+    const parsed=JSON.parse(raw);
+    return (parsed && typeof parsed==='object') ? parsed : {};
+  }catch(err){
+    return {};
+  }
+}
+
+function saveSponsorKnobState(){
+  try{
+    localStorage.setItem(SPONSOR_KNOB_STORAGE_KEY, JSON.stringify(sponsorKnobState));
+  }catch(err){
+    // ignore storage errors
+  }
+}
+
+const formatSponsorKnobValue=value=>{
+  const n=Math.max(0, Math.round(Number(value)||0));
+  return `${n}×`;
+};
+
+function computeSponsorLogosFromKnobs(){
+  const logos=[];
+  for(const entry of sponsorManifest){
+    const count=Math.max(0, Math.round(Number(sponsorKnobState[entry.id] ?? 0)));
+    for(let i=0;i<count;i++) logos.push(entry.src);
+  }
+  return logos;
+}
+
+function getMetaSponsorLogos(meta){
+  const raw = meta?.get?.('sponsor_logos') || '';
+  const parts = String(raw).split(/[\n;]+/);
+  const logos = [];
+  for(const part of parts){
+    const trimmed = part.trim();
+    if(!trimmed) continue;
+    const normalized = normalizeLogoUrl(trimmed);
+    if(!normalized) continue;
+    logos.push(normalized);
+  }
+  return logos;
+}
+
+const isKnownSponsorPath=src=> sponsorManifestMap.has(normalizeSponsorKey(src));
+
+function applySponsorSeedFromList(list){
+  if(!Array.isArray(list) || !list.length) return;
+  const counts=new Map();
+  for(const src of list){
+    const key=normalizeSponsorKey(src);
+    const entry=sponsorManifestMap.get(key);
+    if(!entry) continue;
+    const cur=counts.get(entry.id)||0;
+    counts.set(entry.id, cur+1);
+  }
+  let changed=false;
+  for(const entry of sponsorManifest){
+    const next=counts.get(entry.id)||0;
+    if((sponsorKnobState[entry.id] ?? 0)!==next){
+      sponsorKnobState[entry.id]=next;
+      changed=true;
+    }
+    if(entry.inputEl){
+      const maxVal=Number(entry.inputEl.max||DEFAULT_SPONSOR_REPEAT_MAX);
+      if(next>maxVal) entry.inputEl.max=String(next);
+      entry.inputEl.value=String(next);
+    }
+    if(entry.valueEl){
+      entry.valueEl.textContent=formatSponsorKnobValue(next);
+    }
+  }
+  if(changed) saveSponsorKnobState();
+}
+
+function seedSponsorKnobsFromMeta(meta){
+  if(sponsorKnobsDirty) return;
+  const logos=getMetaSponsorLogos(meta);
+  if(!logos.length) return;
+  if(!sponsorManifest.length){
+    pendingSponsorSeed=logos.slice();
+    return;
+  }
+  applySponsorSeedFromList(logos);
+}
+
+async function setupSponsorKnobs(){
+  if(!knobGrid || !sponsorKnobsHeader) return;
+  const manifest=await fetchSponsorManifest();
+  sponsorManifest=manifest;
+  sponsorManifestMap.clear();
+  if(!manifest.length){
+    sponsorKnobsHeader.remove();
+    return;
+  }
+
+  sponsorKnobState=loadSponsorKnobState();
+  if(typeof sponsorKnobState!=='object' || sponsorKnobState===null) sponsorKnobState={};
+
+  for(const entry of manifest){
+    sponsorManifestMap.set(entry.id, entry);
+    sponsorManifestMap.set(normalizeSponsorKey(entry.file), entry);
+    sponsorManifestMap.set(normalizeSponsorKey(entry.src), entry);
+    const noExt=entry.file.replace(/\.[^.]+$/,'');
+    sponsorManifestMap.set(normalizeSponsorKey(noExt), entry);
+  }
+
+  const frag=document.createDocumentFragment();
+  for(const entry of manifest){
+    const stored=Math.max(0, Math.round(Number(sponsorKnobState[entry.id] ?? 0)));
+    sponsorKnobState[entry.id]=stored;
+
+    const labelEl=document.createElement('div');
+    labelEl.className='lbl';
+    labelEl.textContent=entry.label;
+
+    const inputEl=document.createElement('input');
+    inputEl.type='range';
+    inputEl.min='0';
+    inputEl.max=String(DEFAULT_SPONSOR_REPEAT_MAX);
+    inputEl.step='1';
+    inputEl.value=String(stored);
+    inputEl.dataset.sponsorId=entry.id;
+    inputEl.setAttribute('aria-label', `Ripetizioni sponsor ${entry.label}`);
+
+    const valueEl=document.createElement('span');
+    valueEl.className='val';
+    valueEl.textContent=formatSponsorKnobValue(stored);
+
+    inputEl.addEventListener('input', ()=>{
+      const raw=Number(inputEl.value);
+      const next=Math.max(0, Math.round(Number.isFinite(raw)?raw:0));
+      sponsorKnobState[entry.id]=next;
+      sponsorKnobsDirty=true;
+      valueEl.textContent=formatSponsorKnobValue(next);
+      const maxVal=Number(inputEl.max||DEFAULT_SPONSOR_REPEAT_MAX);
+      if(next>maxVal) inputEl.max=String(next);
+      saveSponsorKnobState();
+      renderSponsors(lastLoadedMeta);
+      layoutAll();
+    });
+
+    entry.inputEl=inputEl;
+    entry.valueEl=valueEl;
+
+    frag.append(labelEl, inputEl, valueEl);
+  }
+
+  knobGrid.insertBefore(frag, sponsorKnobsHeader.nextSibling);
+
+  if(Array.isArray(pendingSponsorSeed) && pendingSponsorSeed.length){
+    applySponsorSeedFromList(pendingSponsorSeed);
+    pendingSponsorSeed=null;
+  }
+
+  renderSponsors(lastLoadedMeta);
+  layoutAll();
+}
 
 const HTML_ESCAPE_MAP = { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" };
 const HTML_ESCAPE_RE = /[&<>"']/g;
@@ -259,15 +547,14 @@ const statusEl=$('#status');
 function renderSponsors(meta){
   if(!sponsorStrip) return;
   sponsorStrip.replaceChildren();
-  const raw = meta?.get?.('sponsor_logos') || '';
-  const parts = String(raw).split(/[\n;]+/);
-  const logos = [];
-  for(const part of parts){
-    const trimmed = part.trim();
-    if(!trimmed) continue;
-    const normalized = normalizeLogoUrl(trimmed);
-    if(!normalized) continue;
-    logos.push(normalized);
+
+  const manualLogos = computeSponsorLogosFromKnobs();
+  const metaLogos = getMetaSponsorLogos(meta);
+  let logos = manualLogos.length ? manualLogos.slice() : metaLogos.slice();
+
+  if(manualLogos.length && metaLogos.length){
+    const extras = metaLogos.filter(src => !isKnownSponsorPath(src));
+    if(extras.length) logos = logos.concat(extras);
   }
 
   logos.forEach((src, idx)=>{
@@ -360,6 +647,7 @@ function initKnobs(){
   // Sponsor strip
   bindKnob('k_sponsor_scale','SPONSOR_HEIGHT_RATIO', pctH);
   bindKnob('k_sponsor_pad','SPONSOR_PADDING_RATIO', pctH);
+  bindKnob('k_sponsor_rows','SPONSOR_ROWS', v=>`${v} riga${v===1?'':'e'}`);
 }
 
 /* ===== Load + Render ===== */
@@ -372,6 +660,8 @@ async function loadAndRender(){
     ]);
     const meta = normalizeMeta(metaRows);
     const opp  = normalizeOpp(oppRows);
+    lastLoadedMeta = meta;
+    seedSponsorKnobsFromMeta(meta);
 
     if (!bg.complete) await new Promise(r => { bg.onload=r; bg.onerror=r; });
 
@@ -408,8 +698,9 @@ async function loadAndRender(){
     ]);
   }catch(err){
     console.error(err);
+    lastLoadedMeta = new Map();
     infoDate.textContent=''; infoTime.textContent=''; infoField.textContent=''; infoPaese.textContent='';
-    renderSponsors(new Map());
+    renderSponsors(null);
     layoutAll();
     setStatusMessage('fallback', '#ffd36d', [
       document.createTextNode(' — controlla permessi o pubblicazione'),
@@ -451,9 +742,14 @@ async function downloadPNG(){
 }
 
 /* ===== Wireup ===== */
-window.addEventListener('DOMContentLoaded', ()=>{
+window.addEventListener('DOMContentLoaded', async ()=>{
   document.querySelector('#btnRefresh').addEventListener('click', loadAndRender, { passive:true });
   document.querySelector('#btnDownload').addEventListener('click', downloadPNG, { passive:true });
+  try{
+    await setupSponsorKnobs();
+  }catch(err){
+    console.error('setupSponsorKnobs failed', err);
+  }
   initKnobs();
   loadAndRender();
   const ro = new ResizeObserver(()=> layoutAll());

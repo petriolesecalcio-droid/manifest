@@ -34,7 +34,7 @@
   .sponsor-strip{
     position:absolute; left:0; right:0; bottom:0;
     height:var(--sponsorHeightPx,0);
-    display:grid; grid-template-columns:repeat(auto-fit, minmax(0, 1fr));
+    display:grid; grid-template-columns:repeat(var(--sponsorCols, 1), minmax(0, 1fr));
     grid-auto-rows:1fr;
     gap:var(--sponsorGapPx,16px); padding:var(--sponsorPaddingPx,20px);
     align-content:stretch; align-items:stretch; justify-items:center;
@@ -43,7 +43,8 @@
   .sponsor-strip:empty{ display:none; }
   .sponsor-strip .sponsor-logo{
     width:100%; height:100%; max-height:var(--sponsorLogoMaxPx,80px);
-    object-fit:contain; background:#fff;
+    object-fit:contain;
+    background:transparent;
   }
 
   /* Squadre (loghi+nomi) */
@@ -52,16 +53,16 @@
     transform: translate(-50%, -50%) rotate(var(--angle,0deg)); transform-origin:center center;
   }
   .side .logo{ display:block; object-fit:contain; width:var(--logoWpx,200px); height:var(--logoHpx,200px); filter:drop-shadow(0 4px 14px rgba(0,0,0,.45)); }
-  .side .team-name{
+  .side .team-name{ display:inline-block; text-align:center; line-height:1.05; 
     margin-top:var(--nameGapPx,12px); font-family:"Oswald", Arial, sans-serif!important; font-weight:700; text-transform:uppercase;
-    color:#fff; white-space:nowrap; font-size:var(--nameFontPx,40px); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    color:#fff; white-space:normal; font-size:var(--nameFontPx,40px); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
   }
 
   /* Info (righe indipendenti) */
   .info-line{
     position:absolute; transform: translate(-50%, -50%) rotate(var(--angle,0deg)); transform-origin:center;
     font-family:"Oswald", Arial, sans-serif!important; font-weight:700; text-transform:uppercase;
-    color:#fff; white-space:nowrap; font-size:var(--fontPx,36px);
+    color:#fff; white-space: nowrap; font-size:var(--fontPx,36px);
   }
 
   /* QR block (senza freccia) */
@@ -92,7 +93,7 @@
 
       <details class="tuning">
         <summary>⚙️ Manopole</summary>
-        <div class="grid">
+        <div class="grid" id="knobGrid">
           <div class="group"><strong>Squadre (loghi + nomi) — controlli unificati</strong></div>
           <div class="lbl">Angolo squadre</div>        <input id="k_team_angle" type="range" min="-20" max="20" step="0.5"><span class="val"></span>
           <div class="lbl">Rail Y (squadre)</div>      <input id="k_team_rail"  type="range" min="-0.10" max="0.10" step="0.002"><span class="val"></span>
@@ -132,6 +133,9 @@
           <div class="group"><strong>Strip sponsor</strong></div>
           <div class="lbl">Altezza loghi</div>         <input id="k_sponsor_scale" type="range" min="0.02" max="0.12" step="0.002"><span class="val"></span>
           <div class="lbl">Padding strip</div>        <input id="k_sponsor_pad"   type="range" min="0.00" max="0.08" step="0.002"><span class="val"></span>
+          <div class="lbl">Righe sponsor</div>        <input id="k_sponsor_rows" type="range" min="1" max="4" step="1"><span class="val"></span>
+
+          <div id="sponsorKnobsHeader" class="group"><strong>Selezione sponsor</strong></div>
         </div>
       </details>
 
