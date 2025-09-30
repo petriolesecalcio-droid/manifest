@@ -59,8 +59,8 @@ if(typeof K.SPONSOR_ROWS !== 'number' || !Number.isFinite(K.SPONSOR_ROWS) || K.S
 }
 
 const SPONSOR_MANIFEST_URL = 'logos/sponsor/manifest.json';
-const SPONSOR_KNOB_STORAGE_KEY = 'manifest_sponsor_knobs_v1';
-const DEFAULT_SPONSOR_REPEAT_MAX = 4;
+const SPONSOR_ADJUST_STORAGE_KEY = 'manifest_sponsor_adjust_v1';
+const SPONSOR_ADJUST_DEFAULT = { scale: 1, offsetX: 0, offsetY: 0 };
 
 /* ===== Helpers sheet ===== */
 const gvizCsvURL=(fileId,gid)=>`https://docs.google.com/spreadsheets/d/${fileId}/gviz/tq?gid=${encodeURIComponent(gid)}&headers=1&tqx=out:csv`;
@@ -288,9 +288,7 @@ const sponsorKnobsHeader=document.getElementById('sponsorKnobsHeader');
 
 let sponsorManifest=[];
 const sponsorManifestMap=new Map();
-let sponsorKnobState={};
-let sponsorKnobsDirty=false;
-let pendingSponsorSeed=null;
+let sponsorAdjustState={};
 let lastLoadedMeta=new Map();
 
 const normalizeSponsorKey=value=>{
@@ -352,7 +350,7 @@ const normalizeSponsorManifest=data=>{
       }
     }
     const friendly=label ? String(label).trim() : prettifySponsorLabel(normalizedFile);
-    out.push({ id, file: normalizedFile, src, label: friendly, inputEl:null, valueEl:null });
+    out.push({ id, file: normalizedFile, src, label: friendly });
   }
   return out;
 };
@@ -369,9 +367,9 @@ async function fetchSponsorManifest(){
   }
 }
 
-function loadSponsorKnobState(){
+function loadSponsorAdjustState(){
   try{
-    const raw=localStorage.getItem(SPONSOR_KNOB_STORAGE_KEY);
+    const raw=localStorage.getItem(SPONSOR_ADJUST_STORAGE_KEY);
     if(!raw) return {};
     const parsed=JSON.parse(raw);
     return (parsed && typeof parsed==='object') ? parsed : {};
@@ -380,26 +378,34 @@ function loadSponsorKnobState(){
   }
 }
 
-function saveSponsorKnobState(){
+function saveSponsorAdjustState(){
   try{
-    localStorage.setItem(SPONSOR_KNOB_STORAGE_KEY, JSON.stringify(sponsorKnobState));
+    localStorage.setItem(SPONSOR_ADJUST_STORAGE_KEY, JSON.stringify(sponsorAdjustState));
   }catch(err){
     // ignore storage errors
   }
 }
 
-const formatSponsorKnobValue=value=>{
-  const n=Math.max(0, Math.round(Number(value)||0));
-  return `${n}×`;
+const normalizeAdjustValue = (value, min, max, fallback) => {
+  const num = Number(value);
+  if(!Number.isFinite(num)) return fallback;
+  if(Number.isFinite(min) && num < min) return min;
+  if(Number.isFinite(max) && num > max) return max;
+  return num;
 };
 
-function computeSponsorLogosFromKnobs(){
-  const logos=[];
-  for(const entry of sponsorManifest){
-    const count=Math.max(0, Math.round(Number(sponsorKnobState[entry.id] ?? 0)));
-    for(let i=0;i<count;i++) logos.push(entry.src);
-  }
-  return logos;
+function getSponsorAdjust(id){
+  const existing=sponsorAdjustState[id];
+  const out={
+    scale: normalizeAdjustValue(existing?.scale, 0.2, 3, SPONSOR_ADJUST_DEFAULT.scale),
+    offsetX: normalizeAdjustValue(existing?.offsetX, -100, 100, SPONSOR_ADJUST_DEFAULT.offsetX),
+    offsetY: normalizeAdjustValue(existing?.offsetY, -100, 100, SPONSOR_ADJUST_DEFAULT.offsetY),
+  };
+  out.scale = Number(Math.round(out.scale*100)/100);
+  out.offsetX = Number(Math.round(out.offsetX*10)/10);
+  out.offsetY = Number(Math.round(out.offsetY*10)/10);
+  sponsorAdjustState[id]=out;
+  return out;
 }
 
 function getMetaSponsorLogos(meta){
@@ -416,48 +422,6 @@ function getMetaSponsorLogos(meta){
   return logos;
 }
 
-const isKnownSponsorPath=src=> sponsorManifestMap.has(normalizeSponsorKey(src));
-
-function applySponsorSeedFromList(list){
-  if(!Array.isArray(list) || !list.length) return;
-  const counts=new Map();
-  for(const src of list){
-    const key=normalizeSponsorKey(src);
-    const entry=sponsorManifestMap.get(key);
-    if(!entry) continue;
-    const cur=counts.get(entry.id)||0;
-    counts.set(entry.id, cur+1);
-  }
-  let changed=false;
-  for(const entry of sponsorManifest){
-    const next=counts.get(entry.id)||0;
-    if((sponsorKnobState[entry.id] ?? 0)!==next){
-      sponsorKnobState[entry.id]=next;
-      changed=true;
-    }
-    if(entry.inputEl){
-      const maxVal=Number(entry.inputEl.max||DEFAULT_SPONSOR_REPEAT_MAX);
-      if(next>maxVal) entry.inputEl.max=String(next);
-      entry.inputEl.value=String(next);
-    }
-    if(entry.valueEl){
-      entry.valueEl.textContent=formatSponsorKnobValue(next);
-    }
-  }
-  if(changed) saveSponsorKnobState();
-}
-
-function seedSponsorKnobsFromMeta(meta){
-  if(sponsorKnobsDirty) return;
-  const logos=getMetaSponsorLogos(meta);
-  if(!logos.length) return;
-  if(!sponsorManifest.length){
-    pendingSponsorSeed=logos.slice();
-    return;
-  }
-  applySponsorSeedFromList(logos);
-}
-
 async function setupSponsorKnobs(){
   if(!knobGrid || !sponsorKnobsHeader) return;
   const manifest=await fetchSponsorManifest();
@@ -468,8 +432,8 @@ async function setupSponsorKnobs(){
     return;
   }
 
-  sponsorKnobState=loadSponsorKnobState();
-  if(typeof sponsorKnobState!=='object' || sponsorKnobState===null) sponsorKnobState={};
+  sponsorAdjustState=loadSponsorAdjustState();
+  if(typeof sponsorAdjustState!=='object' || sponsorAdjustState===null) sponsorAdjustState={};
 
   for(const entry of manifest){
     sponsorManifestMap.set(entry.id, entry);
@@ -477,56 +441,65 @@ async function setupSponsorKnobs(){
     sponsorManifestMap.set(normalizeSponsorKey(entry.src), entry);
     const noExt=entry.file.replace(/\.[^.]+$/,'');
     sponsorManifestMap.set(normalizeSponsorKey(noExt), entry);
+    getSponsorAdjust(entry.id);
   }
 
   const frag=document.createDocumentFragment();
   for(const entry of manifest){
-    const stored=Math.max(0, Math.round(Number(sponsorKnobState[entry.id] ?? 0)));
-    sponsorKnobState[entry.id]=stored;
+    const group=document.createElement('div');
+    group.className='group';
+    const title=document.createElement('strong');
+    title.textContent=entry.label;
+    group.appendChild(title);
+    frag.appendChild(group);
 
-    const labelEl=document.createElement('div');
-    labelEl.className='lbl';
-    labelEl.textContent=entry.label;
+    const state=getSponsorAdjust(entry.id);
 
-    const inputEl=document.createElement('input');
-    inputEl.type='range';
-    inputEl.min='0';
-    inputEl.max=String(DEFAULT_SPONSOR_REPEAT_MAX);
-    inputEl.step='1';
-    inputEl.value=String(stored);
-    inputEl.dataset.sponsorId=entry.id;
-    inputEl.setAttribute('aria-label', `Ripetizioni sponsor ${entry.label}`);
+    const addRow=(labelText, key, {min, max, step, precision}, format)=>{
+      const labelEl=document.createElement('div');
+      labelEl.className='lbl';
+      labelEl.textContent=labelText;
 
-    const valueEl=document.createElement('span');
-    valueEl.className='val';
-    valueEl.textContent=formatSponsorKnobValue(stored);
+      const inputEl=document.createElement('input');
+      inputEl.type='range';
+      inputEl.min=String(min);
+      inputEl.max=String(max);
+      inputEl.step=String(step);
+      inputEl.value=String(state[key]);
+      inputEl.dataset.sponsorId=entry.id;
+      inputEl.dataset.adjustKey=key;
+      inputEl.setAttribute('aria-label', `${labelText} – ${entry.label}`);
 
-    inputEl.addEventListener('input', ()=>{
-      const raw=Number(inputEl.value);
-      const next=Math.max(0, Math.round(Number.isFinite(raw)?raw:0));
-      sponsorKnobState[entry.id]=next;
-      sponsorKnobsDirty=true;
-      valueEl.textContent=formatSponsorKnobValue(next);
-      const maxVal=Number(inputEl.max||DEFAULT_SPONSOR_REPEAT_MAX);
-      if(next>maxVal) inputEl.max=String(next);
-      saveSponsorKnobState();
-      renderSponsors(lastLoadedMeta);
-      layoutAll();
-    });
+      const valueEl=document.createElement('span');
+      valueEl.className='val';
+      valueEl.textContent=format(state[key]);
 
-    entry.inputEl=inputEl;
-    entry.valueEl=valueEl;
+      inputEl.addEventListener('input', ()=>{
+        const raw=Number(inputEl.value);
+        let next=normalizeAdjustValue(raw, min, max, state[key]);
+        if(Number.isFinite(precision)){
+          const factor=Math.pow(10, precision);
+          next=Math.round(next*factor)/factor;
+        }
+        state[key]=next;
+        sponsorAdjustState[entry.id]=state;
+        inputEl.value=String(next);
+        valueEl.textContent=format(next);
+        saveSponsorAdjustState();
+        renderSponsors(lastLoadedMeta);
+        layoutAll();
+      });
 
-    frag.append(labelEl, inputEl, valueEl);
+      frag.append(labelEl, inputEl, valueEl);
+    };
+
+    addRow('Scala logo', 'scale', {min:0.2, max:3, step:0.02, precision:2}, v=>`${Number(v).toFixed(2)}×`);
+    addRow('Offset X', 'offsetX', {min:-100, max:100, step:0.5, precision:1}, v=>`${v>0?'+':''}${Number(v).toFixed(1)}%`);
+    addRow('Offset Y', 'offsetY', {min:-100, max:100, step:0.5, precision:1}, v=>`${v>0?'+':''}${Number(v).toFixed(1)}%`);
   }
 
   knobGrid.insertBefore(frag, sponsorKnobsHeader.nextSibling);
-
-  if(Array.isArray(pendingSponsorSeed) && pendingSponsorSeed.length){
-    applySponsorSeedFromList(pendingSponsorSeed);
-    pendingSponsorSeed=null;
-  }
-
+  saveSponsorAdjustState();
   renderSponsors(lastLoadedMeta);
   layoutAll();
 }
@@ -548,13 +521,10 @@ function renderSponsors(meta){
   if(!sponsorStrip) return;
   sponsorStrip.replaceChildren();
 
-  const manualLogos = computeSponsorLogosFromKnobs();
   const metaLogos = getMetaSponsorLogos(meta);
-  let logos = manualLogos.length ? manualLogos.slice() : metaLogos.slice();
-
-  if(manualLogos.length && metaLogos.length){
-    const extras = metaLogos.filter(src => !isKnownSponsorPath(src));
-    if(extras.length) logos = logos.concat(extras);
+  let logos = metaLogos.slice();
+  if(!logos.length && sponsorManifest.length){
+    logos = sponsorManifest.map(entry=>entry.src);
   }
 
   logos.forEach((src, idx)=>{
@@ -564,6 +534,14 @@ function renderSponsors(meta){
     img.alt=`Logo sponsor ${idx+1}`;
     img.decoding='async';
     img.loading='lazy';
+    const entry=sponsorManifestMap.get(normalizeSponsorKey(src));
+    if(entry){
+      const adjust=getSponsorAdjust(entry.id);
+      img.dataset.sponsorId=entry.id;
+      img.style.transform=`translate(${adjust.offsetX}%, ${adjust.offsetY}%) scale(${adjust.scale})`;
+    }else{
+      img.style.transform='';
+    }
     sponsorStrip.appendChild(img);
   });
 
@@ -661,8 +639,6 @@ async function loadAndRender(){
     const meta = normalizeMeta(metaRows);
     const opp  = normalizeOpp(oppRows);
     lastLoadedMeta = meta;
-    seedSponsorKnobsFromMeta(meta);
-
     if (!bg.complete) await new Promise(r => { bg.onload=r; bg.onerror=r; });
 
     const squadra1 = (meta.get('squadra1') || 'Petriolese').trim();
