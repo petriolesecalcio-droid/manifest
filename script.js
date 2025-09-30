@@ -176,6 +176,17 @@ function layoutSide(sideEl, metrics, cx, cy, scale=1){
   sideEl.style.setProperty('--logoWpx', `${logoH}px`);
   sideEl.style.setProperty('--nameGapPx', `${nameGap}px`);
   sideEl.style.setProperty('--nameFontPx', `${nameFont}px`);
+
+  let adjustPx = 0;
+  const nameEl = sideEl.querySelector?.('.team-name');
+  if(nameEl){
+    const rect = nameEl.getBoundingClientRect?.();
+    const nameHeight = rect && Number.isFinite(rect.height) ? rect.height : 0;
+    if(nameHeight > 0 || nameGap > 0){
+      adjustPx = -0.5 * (nameGap + nameHeight);
+    }
+  }
+  sideEl.style.setProperty('--teamCenterAdjustPx', `${adjustPx}px`);
 }
 
 function layoutTeams(metrics, scope){
