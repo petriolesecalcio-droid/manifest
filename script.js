@@ -11,7 +11,7 @@ const K = {
   VS_X_RATIO:         0.50,
   VS_Y_RATIO:         0.57,
   TEAM_ALONG_RATIO:  -0.015, // -1.5% W
-  TEAM_OFFSET_RATIO:  0.25,  // 25%
+  TEAM_OFFSET_RATIO:  0.20,  // 20%
   TEAM_RAIL_Y_RATIO:  0.018, // +1.8% H
   TEAM_SCALE:         1.00,
   TEAM_Y_EXTRA_RATIO: 0.00,
