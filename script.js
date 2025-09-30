@@ -15,6 +15,10 @@ const K = {
   TEAM_RAIL_Y_RATIO:  0.018, // +1.8% H
   TEAM_SCALE:         1.00,
   TEAM_Y_EXTRA_RATIO: 0.00,
+  TEAM1_ALONG_OFFSET_RATIO: 0.00,
+  TEAM1_Y_OFFSET_RATIO:     0.00,
+  TEAM2_ALONG_OFFSET_RATIO: 0.00,
+  TEAM2_Y_OFFSET_RATIO:     0.00,
 
   /* Dimensioni nomi/logo */
   LOGO_H_RATIO:       0.12,
@@ -180,6 +184,8 @@ function layoutSide(sideEl, metrics, cx, cy, scale=1){
 
 function layoutTeams(metrics, scope){
   const { W, H, teamCos:dx, teamSin:dy } = metrics;
+  const nx = -dy;
+  const ny = dx;
 
   // VS “ancora” spostata lungo la retta e verticalmente
   let vsX = W * K.VS_X_RATIO + dx * (W * K.TEAM_ALONG_RATIO);
@@ -191,6 +197,16 @@ function layoutTeams(metrics, scope){
   const yExtra = H * K.TEAM_Y_EXTRA_RATIO;
   lY += yExtra;
   rY += yExtra;
+
+  const lAlong = W * K.TEAM1_ALONG_OFFSET_RATIO;
+  const lPerp  = H * K.TEAM1_Y_OFFSET_RATIO;
+  lX += dx * lAlong + nx * lPerp;
+  lY += dy * lAlong + ny * lPerp;
+
+  const rAlong = W * K.TEAM2_ALONG_OFFSET_RATIO;
+  const rPerp  = H * K.TEAM2_Y_OFFSET_RATIO;
+  rX += dx * rAlong + nx * rPerp;
+  rY += dy * rAlong + ny * rPerp;
 
   layoutSide(scope?.querySelector?.('#side1'), metrics, lX, lY, K.TEAM_SCALE);
   layoutSide(scope?.querySelector?.('#side2'), metrics, rX, rY, K.TEAM_SCALE);
@@ -593,6 +609,10 @@ function initKnobs(){
   bindKnob('k_team_dist','TEAM_OFFSET_RATIO', pct);
   bindKnob('k_team_scale','TEAM_SCALE', v=>`${v.toFixed(2)}×`);
   bindKnob('k_team_y','TEAM_Y_EXTRA_RATIO', pctH);
+  bindKnob('k_team1_along','TEAM1_ALONG_OFFSET_RATIO', pctW);
+  bindKnob('k_team1_y','TEAM1_Y_OFFSET_RATIO', pctH);
+  bindKnob('k_team2_along','TEAM2_ALONG_OFFSET_RATIO', pctW);
+  bindKnob('k_team2_y','TEAM2_Y_OFFSET_RATIO', pctH);
 
   // Info (ancora + angolo unico)
   bindKnob('k_info_angle','INFO_ANGLE_DEG', v=>`${v}°`);
