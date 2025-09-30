@@ -45,6 +45,7 @@ const K = {
   SPONSOR_HEIGHT_RATIO:   0.165,
   SPONSOR_PADDING_RATIO: 0.020,
   SPONSOR_GAP_RATIO:     0.010,
+  SPONSOR_ROWS:          1,
 };
 
 /* nuova chiave LS per applicare SUBITO i default */
@@ -52,6 +53,9 @@ const LS_KEY = 'manifest_tuning_v6';
 try { Object.assign(K, JSON.parse(localStorage.getItem(LS_KEY)||'{}')||{}); } catch {}
 if(typeof K.SPONSOR_HEIGHT_RATIO !== 'number' && typeof K.SPONSOR_LOGO_RATIO === 'number'){
   K.SPONSOR_HEIGHT_RATIO = K.SPONSOR_LOGO_RATIO;
+}
+if(typeof K.SPONSOR_ROWS !== 'number' || !Number.isFinite(K.SPONSOR_ROWS) || K.SPONSOR_ROWS <= 0){
+  K.SPONSOR_ROWS = 1;
 }
 
 /* ===== Helpers sheet ===== */
@@ -229,6 +233,9 @@ function layoutSponsors(metrics, scope){
   if(!strip) return;
   const { H } = metrics;
   const desiredHeight = H * K.SPONSOR_HEIGHT_RATIO;
+  const rows = Math.max(1, Math.round(K.SPONSOR_ROWS));
+  const logosCount = strip.querySelectorAll('.sponsor-logo').length;
+  const cols = Math.max(1, logosCount ? Math.ceil(logosCount / rows) : 1);
 
   let qrBottom = H;
   let clearance = H * 0.02; // margine base (~2% dell'altezza)
@@ -263,6 +270,7 @@ function layoutSponsors(metrics, scope){
   strip.style.setProperty('--sponsorPaddingPx', `${padding}px`);
   strip.style.setProperty('--sponsorGapPx', `${H * K.SPONSOR_GAP_RATIO}px`);
   strip.style.setProperty('--sponsorLogoMaxPx', `${Math.max(0, height - padding * 2)}px`);
+  strip.style.setProperty('--sponsorCols', `${cols}`);
 }
 
 /* ===== DOM ===== */
@@ -389,6 +397,7 @@ function initKnobs(){
   // Sponsor strip
   bindKnob('k_sponsor_scale','SPONSOR_HEIGHT_RATIO', pctH);
   bindKnob('k_sponsor_pad','SPONSOR_PADDING_RATIO', pctH);
+  bindKnob('k_sponsor_rows','SPONSOR_ROWS', v=>`${v} riga${v===1?'':'e'}`);
 }
 
 /* ===== Load + Render ===== */
